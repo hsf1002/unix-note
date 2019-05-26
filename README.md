@@ -443,13 +443,98 @@ ssize_t write (int fd, const void * buf, size_t count);
 ##### 函数dup和dup2
 
 ```
-int  dup(int fd);
+int dup(int fd);
 int dup2(int fd, int fd2);
 ```
 
+* dup返回的新文件描述符一定是当前可用文件描述符中的最小值
+* dup2可以用fd2指定新的文件描述符的值，如果fd2已打开则关闭，如果fd2等于fd则返回fd2，而不关闭。否则fd2的FD_CLOEXEC文件描述符标志被清除，这样fd2在调用exec时是打开状态
 
+```
+dup(fd);
+等同于：
+fcntl(fd, F_DUPFD, 0);
+```
 
+```
+dup2(fd, fd2);
+等同于
+close(fd);
+fcntl(fd, F_DUPFD, fd2);
+```
 
+后一种情况，不完全等同
+
+* dup2是原子操作，而close和fcntl之间可能被信号捕获函数打断而修改文件描述符
+* dup2和fcntl有不同的errno
+
+##### 函数sync、fsync和fddatasync
+
+```
+#include <unistd.h>
+void sync(void)；
+int fsync(int fd);		// 成功返回0，出错返回-1
+int fdatasync(int fd);	// 成功返回0，出错返回-1
+```
+
+传统UNIX系统都在内核中设有缓冲区高速缓存或页高速缓存，大多数磁盘IO都通过缓冲区进行，这种方式称为延迟写，为了保持实际文件和缓冲区内容一致性
+
+* sync：只是把修改过的块缓冲区排入写队列就返回，不等实际写操作结束，通常update的系统守护进程周期性的一般三十秒调用sync
+* fsync：只对文件描述符fd指定的一个文件起作用，且等待写磁盘操作完成才返回
+* fdatasync：类似于fsync，但只影响文件的数据部分，而fsync还会同步更新文件的属性
+
+flush()仅仅刷新位于用户空间中的流缓冲区fflush()返回后，仅仅保证数据已不在流缓冲区中，并不保证它们一定被写到了磁盘。从流缓冲区刷新的数据可能已被写至磁盘，也可能还待在内核I/O缓冲区中，要确保流I/O写出的数据已写至磁盘，那么在调用fflush()后还应当调用fsync()
+
+##### 函数fcntl
+
+```
+int fcntl(int fd, int cmd, ... /* arg */ );	// 成功返回依赖cmd，出错返回-1
+```
+
+可以实现以下5种功能：
+
+* 复制一个已有的文件描述符（cmd=F_DUPFD或F_DUPFD_CLOEXEC）
+* 获取/设置文件描述符标志（cmd=F_GETFD或F_SETFD）
+* 获取/设置文件状态标志（cmd=F_GETFL或F_SETFL）
+* 获取/设置异步IO所有权（cmd=F_GETOWN或F_SETOWN）
+* 获取/设置记录锁（cmd=F_GETLK或F_SETLK）
+
+cmd的取值有11种，如下：
+
+- F_DUPFD：复制文件描述符，并返回新文件描述符，新的文件描述符的F_DUPFD_CLOEXEC被清除
+- F_DUPFD_CLOEXEC：复制文件描述符，并返回新文件描述符，新文件描述符的F_DUPFD_CLOEXEC被设置
+- F_GETFD：读取文件描述标识
+- F_SETFD：设置文件描述标识
+- F_GETFL：读取文件状态标识（O_RDONLY、O_WRONLY、O_RDWR、O_EXEC等）
+- F_SETFL：设置文件状态标识，将文件状态标志设置为第三个参数
+- F_GETOWN：获取当前接收SIGIO和SIGURG信号的进程ID或进程组ID
+- F_SETOWN：设置接收SIGIO和SIGURG信号的进程ID或进程组ID（arg为正是指定一个进程ID，arg为负是指定绝对值等于arg的进程组ID）
+- F_GETLK：如果已经被加锁，返回该锁的数据结构。如果没有被加锁，将l_type设置为F_UNLCK
+- F_SETLK：给文件加上进程锁
+- F_SETLKW：给文件加上进程锁，如果此文件之前已经被加了锁，则一直等待锁被释放
+
+如果出错，所有命令都返回-1，如果成功则返回某个其他值，这四个命令有特定返回值：F_DUPFD返回新的文件描述符，F_GETFD和F_GETFL返回相应的标志，F_GETOWN返回一个正的进程ID或负的进程组ID
+
+##### 函数ioctl
+
+```
+#include <sys/ioctl.h>
+int ioctl(int fd, unsigned long request, ...); // 出错返回-1，成功返回其他值
+```
+
+IO操作的杂物箱
+
+##### /dev/fd
+
+较新的系统都会提供/dev/fd目录，名为0、1、2等的文件，打开/dev/fd/n等效于复制描述符n（假定n是打开的）
+
+```
+fd = open("/dev/fd/0", mode);
+等同于：
+fd = dup(0);
+```
+
+Linux对/dev/fd的实现是个例外，把文件描述符映射指向底层物理文件的符号连接，打开/dev/fd/0时，事实上正在打开与标准输入关联的文件，因此返回的新文件描述符的模式与/dev/fd文件描述符的模式并不相关
 
  ### 第四章  文件和目录
 
