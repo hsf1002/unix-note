@@ -630,3 +630,47 @@ S_TYPEISSHM()	共享存储对象
 
 可以在st_mode中设置标志（S_ISUID和S_ISGID），当执行一个程序时，将有效用户ID设置为文件所有者的用户ID st_uid，将有效组ID设置为文件组所有者ID st_gid
 
+##### 文件访问权限
+
+```
+S_IRUSR：用户读权限
+S_IWUSR：用户写权限
+S_IXUSR：用户执行权限
+
+S_IRGRP：用户组读权限
+S_IWGRP：用户组写权限
+S_IXGRP：用户组执行权限
+
+S_IROTH：其他组都权限
+S_IWOTH：其他组写权限
+S_IXOTH：其他组执行权限
+```
+
+* 打开某个文件时，对该文件的每一级目录，包含隐藏的当前目录都必须有可执行权限
+* 文件的读权限与open的O_RDONLY和O_RDWR标志有关
+* 文件的写权限与open的O_WRONLY和O_RDWR标志有关
+* 为了在open中指定O_TRUNC标志，必须具有写权限
+* 为了在目录中创建新文件，必须对该目录具有写权限和执行权限
+* 为了删除一个文件，必须对该目录具有写权限和执行权限，对该文件不需要有读写权限
+* 如果用7个exec函数之一执行某个文件，必须具有执行权限，该文件必须是普通文件
+
+##### 新文件和目录的所有权
+
+open或create创建的新文件，用户ID是进程的有效用户ID，组ID可能实现为以下之一：
+
+* 进程的有效组ID
+* 所在目录的组ID
+
+##### 函数access和faccessat
+
+有时候希望按照实际用户ID和实际组ID来测试访问能力，测试可以调用这两个函数：
+
+```
+#include <unistd.h>
+int access(const char *pathname, int mode);		// 成功返回0，出错返回-1
+int faccessat(int fd, const char *pathname, int mode, int flag);	// 成功返回0，出错返回-1
+```
+
+* mode值可以为：F_OK（存在）   R_OK（具有读权限）   W_OK（具有写权限）   X_OK（具有执行权限）
+* flag参数设置为AT_EACCESS，则访问检查的是进程的有效用户ID和有效组ID
+
