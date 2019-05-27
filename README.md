@@ -674,3 +674,59 @@ int faccessat(int fd, const char *pathname, int mode, int flag);	// 成功返回
 * mode值可以为：F_OK（存在）   R_OK（具有读权限）   W_OK（具有写权限）   X_OK（具有执行权限）
 * flag参数设置为AT_EACCESS，则访问检查的是进程的有效用户ID和有效组ID
 
+##### 函数umask
+
+```
+#include <sys/stat.h>
+mode_t umask(mode_t cmask);	// 返回值：之前的文件模式创建屏蔽字
+```
+
+```
+read: 4
+write: 2
+execute: 1
+
+umask值	 文件权限	  文件夹权限
+0			rw			rwx
+1			rw			rw
+2			r			rx
+3			r			r
+4			w			wx
+5			w			w
+6			x			x
+7		no permission allowed
+```
+
+```
+屏蔽位		含义
+0400	用户读
+0200	用户写
+0100	用户执行
+0040	组读
+0020	组写
+0010	组执行
+0004	其他读
+0002	其他写
+0001	其他执行
+```
+
+* 创建一个新目录或文件时，默认权限通过umask查看
+* 子进程的屏蔽字不会影响到父进程
+* UNIX大多数用户不会处理umask的值，通常在登陆时由shell的启动文件设置一次
+* 为了在进程中确保指定的访问权限已经激活，必须修改umask的值
+
+##### 函数chmod、fchmod、fchmodat
+
+这三个函数可以更改现有文件的访问权限
+
+```
+#include <sys/stat.h>
+int chmod(const char *path, mode_t mode);
+int fchmod(int fd, mode_t mode);
+int fchmodat(int fd, const char *pathname, mode_t mode, int flag);
+成功返回0，出错返回-1
+```
+
+* chmod在指定文件上操作
+* fchmod则对已经打开的文件进行操作
+* 
