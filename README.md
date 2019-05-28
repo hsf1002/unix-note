@@ -322,7 +322,7 @@ long fpathname(int fd, int name); 				// 适用于_PC开头的常量如 _PC_PATH
 
 头文件sys/types.h定义的，还有些在其他头文件中，都是用typedef定义，大多数以_t结尾，用这种方式定义后，不用再考虑因系统不同而变化的程序实现细节
 
-###第三章  文件I/O
+### 第三章 文件IO
 
 ##### 文件描述符
 
@@ -396,7 +396,7 @@ off_t lseek(int fd, off_t offset, int whence);	// 成功返回偏移量，出错
 * SEEK_CUR：距离当前偏移量的offset个字节
 * SEEK_END：距离文件结尾处的offset个字节
 
-
+---------------------------------------------------------------------
 
 * 如果文件描述符指向一个管道、FIFO或网络套接字，返回-1，且errno为ESPIPE
 
@@ -767,9 +767,49 @@ S_IRWXO			其他读写执行
 
 目录/tmp和/var/tmp是设置粘着位 的典型代表，任何用户都可以在这两个目录创建文件，但是不能删除或重命名其他人的文件
 
+##### 函数chown、fchown、fchownat和lchown
+
+更改文件的用户ID和组ID，如果两个参数owner或group任意一个是-1，则对应的ID不变
+
+```
+int chown(const char *pathname,uid_t owner,gid_t group);
+int fchown(int fd,uid_t owner,gid_t group);
+int fchownat(int fd,const char *pathname,uid_t owner,gid_t group,int flag)
+int lchown(const char *pathname, uid_t owner, gid_t group);     
+// 4个函数的返回值：若成功，返回0；若出错，返回-1 
+```
+
+* 符号链接情况下（设置了AT_SYMLINK_NOFOLLOW），lchown和fchownat更改符号链接本身而不是指向文件的所有者
+
+* fchown改变fd指向的打开文件的所有者，既然是已打开文件，不能作用于符号链接
+* fchownat在两种情况下与chown或lchown相同：一是pathname是绝对路径，一是fd取值为AT_FDCWD而pathname为相对路径。在这两种情况下，如果flag设置了AT_SYMLINK_NOFOLLOW，fchownat和lchown行为相同，如果flag清除了此标志，fchownat与chown行为相同。如果fd为打开目录的文件描述符，且pathname是相对路径，fchownat函数计算相对于打开目录的pathname
+
+##### 文件长度
+
+* 普通文件：长度可以是0，从开始读到文件结束为止
+* 目录：长度通常是一个数（16，512等）的整数倍
+* 符号链接：长度是文件名的实际字节数，不包含结尾的null字节
+* 现代系统大多提供了st_blksize：对文件I/O较合适的块长度 和 st_blocks：所分配的实际512字节块的个数
+* 空洞：设置的偏移量超过文件尾端，并写入某些数据造成
+
+```
+ls -l core
+
+du -s core		// 所使用的磁盘空间总量，多少个512字节（linux如果设置了环境变量POSIXLY_CORECT，是1024， 否则是512）
+
+wc -c core		// 正常的IO操作读整个文件长度，-c计算字符数/字节数
 
 
+如果用命令比如cat core > core.copy，则空洞会被实际数据0所填满
+```
 
+##### 文件截断
 
+```
+int truncate(const char *path, off_t length);	// 若成功，返回0；若出错，返回-1 
+int ftruncate(int fd,off_t length);				// 若成功，返回0；若出错，返回-1 
+```
 
+* 如果文件本身长度大于length，则超过length以外的数据不能访问
+* 如果文件本身长度小于length，文件长度将增加，以前的文件尾端和新的文件尾端之间的数据读作0，可能创造了一个空洞
 
