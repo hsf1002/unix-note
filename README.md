@@ -860,3 +860,55 @@ int unlinkat (int fd,const char* pathname, int flag);
 
 ##### 函数rename和renameat
 
+可以对文件或目录进行重命名
+
+```
+#include <stdio.h>
+int rename(const char *oldname, const char*newname);
+int renameat(int oldfd, const char *oldname, int newfd, const char *newname);
+// 成功返回0；失败返回-1
+```
+
+* 如果oldname是一个文件，为该文件或链接文件重命名。如果newname已存在，不能引用一个目录，如果newname已存在且不是一个目录，则先删除该目录项再将oldname重命名为newname，对于包含oldname和newname的目录，调用进程必须具有写权限
+* 如果oldname是一个目录，为该目录重命名。如果newname已存在，则必须引用一个空目录（只有.和..），先将其删除，再将oldname重命名为newname。newname不能包含oldname作为其路径前缀
+* 如果oldname或newname引用符号链接，则处理符号链接本身
+* 不能对.和..重命名
+* 如果oldname和newname引用同一个文件，不做任何修改返回
+
+##### 符号链接
+
+符号链接是对一个文件的间接指针，而硬链接直接指向文件的i节点，硬链接的限制：
+
+* 通常要求硬链接和文件处于同一文件系统
+* 只有超级用户能够创建指向目录的硬链接
+
+符号链接指向何种对象没有文件系统限制，任何用户都可以创建指向目录的符号链接。是否跟随：链接到实际文件
+
+* 跟随：access、chdir、chmod、chown、create、exec、link、open、opendir、pathconf、stat、truncate
+* 不跟随：lchown、lstat、readlink、remove、rename、unlink
+
+1. 符号链接的无限循环很容易消除，因为unlink并不跟随符号链接，而硬链接的这种循环很难消除
+2. 当用open打开文件，如果参数路径是一个符号链接，则跟随指向所链接的文件
+3. 符号链接可以指向不存在的文件，用 ls -l 可以查看，但是无法cat
+
+##### 创建和读取符号链接
+
+```
+#include<unistd.h>
+int symlink(const char*actualpath,const char *sympath);
+int symlinkat(const char *actualpath,int fd,const char *sympath);
+// 两个函数返回值：若成功，返回0;若出错，返回-1
+```
+
+* 创建符号链接，并不要求actualpath已经存在，actualpath和sympath也无需位于同一文件系统
+
+* 因为open跟随符号链接，需要一种方式打开符号链接本身
+
+```
+ssize_t readlink(const char* restrict pathname,char *restrict buf,size_t bufsize);  
+ssize_t readlinkat(int fd,const char* restrict pathname,char *restrict buf,size_t bufsize);
+// 两个函数返回值：若成功，返回读取的字节数（不以null字节终止）；若出错，返回-1  
+```
+
+这两个函数组合了open、read和close的所有操作
+
