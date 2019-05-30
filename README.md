@@ -912,3 +912,81 @@ ssize_t readlinkat(int fd,const char* restrict pathname,char *restrict buf,size_
 
 这两个函数组合了open、read和close的所有操作
 
+##### 文件的时间
+
+每个文件维护的三个字段
+
+```
+字段        说明                例子            ls选项
+st_atim    文件数据最后访问时间    read          -u
+st_mtim    文件数据最后修改时间    write         默认
+st_ctim    i节点状态最后更改时间   chmod、chown  -c
+```
+
+* 影响i节点的操作：访问权限、更改用户ID、更改链接数等，但不修改文件内容，系统并不维护i节点的最后访问时间，access和stat函数并不更改其中的一个
+* 创建一个文件影响包含该文件的目录，和i节点，读写操作只影响该文件的i节点，不影响目录
+
+##### 函数futimens、utimensat和utimes
+
+一个文件的访问时间和修改时间可以指定纳秒级别的时间戳进行修改
+
+```
+#include<sys/stat.h>
+int futimens(int fd, const struct timespec times[2]);
+int utimensat(int fd, const char* path, const struct time spec times[2], int flag);
+// 两个函数返回值：若成功，返回0，如出错，返回-1
+```
+
+times数组第一个元素是访问时间，第二个是修改时间，都是日历时间（从1970/01/01 00:00:00开始的秒数）
+
+* 如果times是空指针，则访问时间和修改时间设置为当前时间
+* 如果times参数数组任意元素的tv_nsec为UTIME_NOW，相应的时间戳设置为当前时间，忽略tv_sec
+
+```
+struct timespec {
+    time_t tv_sec; 	// seconds 
+    long tv_nsec; 	// and nanoseconds 
+};
+```
+
+* 如果times参数数组任意元素的tv_nsec为UTIME_OMIT，相应的时间戳保持不变，忽略tv_sec
+* 如果times参数数组两个元素的tv_nsec既不是UTIME_NOW也不是UTIME_OMIT，相应的时间戳更改为tv_sec和tv_nsec字段的值
+
+futimens、utimensat属于POSIX，而utimes在XSI扩展选项中
+
+```
+#include <sys/time.h>
+int utimes(const char *filename, const struct timeval times[2]);
+// 成功返回0，失败返回-1
+```
+
+```
+struct timeval {
+    long tv_sec;        /* seconds */
+    long tv_usec;       /* microseconds */
+};
+```
+
+注意：不能对状态更改时间st_ctim（i节点最近被修改的时间）指定一个值，因为调用utims时，此字段自动更新
+
+##### 函数mkdir、mkdirat和rmdir
+
+```
+#include <sys/stat.h>     
+int mkdir(const char *pathname, mode_t mode);     
+int mkdirat(int fd, const char *pathname, mode_t mode);     
+// 两个函数返回值：若成功，返回0；若出错，返回-1 
+```
+
+这两个函数创建一个新的空目录，其中.和..自动创建，所指定的文件访问权限mode由进程的文件模式屏蔽字修改
+
+rmdir函数可以删除一个空目录
+
+```
+#include <unistd.h>     
+int rmdir(const char *pathname);     
+// 返回值：若成功，返回0；若出错，返回-1 
+```
+
+如果调用此函数使目录的链接计数成为0，并且也没有其他进程打开此目录，则释放由此目录占用的空间。如果在链接计数达到0时，有一个或多个进程打开此目录，则在此函数返回前删除最后一个链接及.和..项。另外，在此目录中不能再创建新文件。但是在最后一个进程关闭它之前并不释放此目录。（即使另一些进程打开该目录，也不能执行其他操作。为了使rmdir函数成功执行，该目录必须是空的）
+
