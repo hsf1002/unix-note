@@ -1273,3 +1273,44 @@ int puts(const char *str);
 * puts虽然不像gets那样不安全也要避免使用，以免需要记住它的最后是否加了一个换行符
 * 总是用fgets和fputs，每行终止都必须自己处理换行符
 
+##### 标准IO的效率
+
+```
+fgets/fputs   best?
+getc/putc
+fgetc/fputc
+```
+
+exit函数会冲洗任何未写的数据，然后关闭所有打开的流，使用标准IO的优点是无需考虑缓冲及最佳IO长度的选择
+
+##### 二进制IO
+
+对于二进制文件，如果一次读一个字符，麻烦且费时，如果一次读一行，fputs在遇到null字节会停止，且结构中可能含有null字节，类似如果输入数据中包含null字节或换行符，fgets无法正常工作
+
+```
+size_t fread(void *restrict ptr, size_t size, size_t count, FILE *restrict fp);
+size_t fwrite(const void *restrict buf, size_t size, size_t count, FILE *restrict fp);
+// 两个函数的返回值：读或写的对象数
+// size是每个数组或结构体的长度，count是读写的元素个数
+```
+
+使用这两个函数可以轻易的读写一个二进制数组或一个结构
+
+```
+float dat[10];
+
+if (fwrite(&data[2]), sizeof(float), 4, fp) != 4)
+   err
+   
+struct{
+    short count;
+    long total;
+    ...
+}
+
+if (fwrite(&item, sizeof(item), 1, fp) != 1)
+	err
+```
+
+返回值可能小于所要求的count：读如果出错或到达文件尾，调用ferror或feof判断是哪种情况，写如果小于则出错
+
