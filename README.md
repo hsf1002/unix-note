@@ -1432,3 +1432,46 @@ template这个字符串最后6位设置为XXXXXX的路径名
 * 与tmpfile不同，mkstemp创建的临时文件不会自动删除，必须手动解除链接
 * 使用tmpnam和tmpfile有个缺点，在返回唯一的路径名和使用该路径名之间有一个时间窗口，可能被其他进程先创建，而使用mkstemp不存在这个问题
 
+##### 内存流
+
+三个函数可以用于内存流的创建：
+
+* fmemopen：
+  * 无论何时以追加方式打开，当前文件位置设置为缓冲区第一个null字节，如果缓冲区不存在null字节，则当前位置设置为缓冲区结尾的后一个字节；如果不是追加方式，当前位置设置为缓冲区的开始位置
+  * 如果buf是null，打开流进行读写没有意义
+  * 任何时候需要增加缓冲区中数据量以及调用fclose、fflush、fseek、fseeko、fsetpos时都会在当前位置写入一个null字节
+
+```
+FILE *fmemopen(void *restrict buf, size_t size, const char *restrict mode);
+// 若成功，返回流指针，若出错，返回NULL
+```
+
+buf指向缓冲区，size指明缓冲区大小，mode控制如何使用流
+
+* open_memstream：
+
+```
+FILE* open_memstream(char **ptr, size_t* sizeloc);
+// 若成功，返回流指针，若出错，返回NULL
+```
+
+* open_wmemstream：
+
+```
+#include <wchar.h>
+FILE* open_wmemstream(wchar_t **buf, size_t *size);
+// 若成功，返回流指针，若出错，返回NULL
+```
+
+这两个与fmemopen不同之处：
+
+1. 创建的流只能写打开
+2. 不能指定缓冲区，可以分别通过buf和size参数访问缓冲区地址和大小
+3. 关闭流需要自行释放缓冲区
+4. 对流添加字节会增加缓冲区大小
+
+缓冲区大小和地址有一些原则：
+
+1. 缓冲区地址和大小只有在调用fclose或fflush后才有效
+2. 这些值只有在下一次流写入或调用flclose前才有效
+
