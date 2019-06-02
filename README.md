@@ -1205,3 +1205,71 @@ type的类型：
 
 调用flose可以关闭一个打开的流
 
+##### 读写流
+
+**每次一个字符的IO：**
+
+输入函数：以下三个函数一次读一个字符
+
+```
+int getc (FILE * fp);
+int fgetc (FILE * fp);    // f代表的是function
+int getchar(void);
+// 三个函数若成功返回下一个字符，若出错或到达文件尾，返回EOF
+```
+
+为了区分出错还是文件尾，可以调用：
+
+```
+int ferror(FILE * fp);
+int feof(FILE *fp);
+// 两个函数若条件为真，返回非0，否则，返回0
+void clearerr(FILE *fp)
+// 可以清除出错标志和文件结束标志
+```
+
+从流中读出的数据，可以调用ungetc将字符压送回流中，压送后可以再次读出，读出字符的顺序与压送顺序相反：
+
+```
+int ungetc(int c, FILE *fp);
+// 若成功，返回c，若出错，返回EOF
+```
+
+* 一次只能回送一个字符
+* 回送的字符，不一定是上一次读到的字符
+* 正在读一个输入流，并进行某种形式的切词或记号切分操作，会经常用到回送字符操作
+
+输出函数：与三个输入函数对应
+
+```
+int putc (int c, FILE * fp);
+int fputc (int c, FILE * fp);
+int putchar(int c);
+// 三个函数若成功返回c，若出错，返回EOF
+```
+
+* getchar等同于getc(stdin)，putchar等同于putc(c, stdout)
+
+* getc和putc可以实现为宏，而fgetc和fputc是函数
+
+**每次一行的IO：** 
+
+```
+char *fgets(char *restrict buf, int n, FILE *restrict fp);
+char *gets(char *buf);
+// 这两个函数若成功返回buf，若出错或到达文件尾，返回NULL
+```
+
+* gets从标准输入读，fgets从指定的流读
+
+* gets不被推荐，ISO C最新版本以及忽略，原因是不能指定缓冲区大小可能造成缓冲区溢出
+
+```
+int fputs(const char *restrict str, FILE *restrict fp);
+int puts(const char *str);
+// 这两个函数若成功返回非负值，若出错，返回EOF
+```
+
+* puts虽然不像gets那样不安全也要避免使用，以免需要记住它的最后是否加了一个换行符
+* 总是用fgets和fputs，每行终止都必须自己处理换行符
+
