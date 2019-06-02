@@ -1475,3 +1475,52 @@ FILE* open_wmemstream(wchar_t **buf, size_t *size);
 1. 缓冲区地址和大小只有在调用fclose或fflush后才有效
 2. 这些值只有在下一次流写入或调用flclose前才有效
 
+### 第六章  系统数据文件和信息
+
+##### 口令文件
+
+/etc/passwd  
+
+用户名：加密口令：用户ID：组ID：注释字段：初始工作目录：初始shell
+
+* 通常有一个用户名为root，用户ID为0的登录项（超级用户）
+* 加密口令字段占位，内容存储在了另一个文件
+* 某些字段可能为空，如果加密口令字段为空，意味着该用户没有口令
+* shell字段包含一个可执行程序，用作登陆shell；为空，则取系统默认，如果是/dev/null，标明是一个设备，不是可执行文件，任何人无法以该用户登陆
+* 为了阻止一个特定用户登陆，除了/dev/null外，还可以将/bin/false作为登陆shell，或/bin/true
+* 使用nobody用户名的目的使任何人都可以登陆，只能访问人人皆可读写的文件
+* 使用finger指令支持注释字段的附加信息
+
+```
+#include <pwd.h>
+struct passwd *getpwnam(const char *name);
+struct passwd *getpwuid(uid_t uid);
+// 两个函数，若成功，返回指针，若出错，返回NULL
+
+struct passwd {
+                char *pw_name; /* user name */
+                char *pw_passwd; /* user password */
+                uid_t pw_uid; /* user id */
+                gid_t pw_gid; /* group id */
+                char *pw_gecos; /* real name */
+                char *pw_dir; /* home directory */
+                char *pw_shell; /* shell program */
+              };
+```
+
+getpwuid由ls命令使用，getpwnam由login程序使用，只能查看登录名或用户ID，如果查看口令文件，需要：
+
+```
+#include <pwd.h>
+struct passwd *getpwent(void);
+// 若成功，返回指针，若出错或到达文件尾，返回NULL
+
+void setpwent(void);
+void endpwent(void);
+```
+
+* getpwent：返回口令文件中下一个记录项
+
+* setpwent：将getpwent的读写地址指向密码文件开头
+* endpwent：关闭这些文件
+
