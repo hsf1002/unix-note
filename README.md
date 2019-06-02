@@ -1341,3 +1341,70 @@ int fsetpos(FILE *fp, const fpos_t *pos);
 // 两个函数若成功，返回0，若出错，返回非0
 ```
 
+##### 格式化IO
+
+```
+int printf(const char *restrict format, ...);
+int fprintf(FILE *restrict fp, const char *restrict format, ...);
+int dprintf(int fd, const char *restrict format, ...);
+// 三个函数，若成功，返回输出字符数，若出错，返回负值
+int sprintf(char *restrict buf, const char *restrict format, ...);
+// 若成功，返回存入数组的字符数，若出错，返回负值
+int snprintf(char *restrict buf, size_t size, const char *restrict format, ...);
+// 如缓冲区足够大，返回将要存入的字符数，若编码出错，返回负值
+```
+
+* printf：将格式化数据写到标准输出
+* fprintf：写到指定的流
+* dprintf：写到指定的文件描述符
+* sprintf：送入数组buf，尾端自动加null字节，但该字节不包含在返回值中，缓冲区可能溢出
+* snprintf：为了防止缓冲区溢出，指定了缓冲区长度
+
+参数长度说明：
+
+```
+hh  signed/unsigned char
+h   signed/unsigned short
+l   signed/unsigned long
+ll  signed/unsigned long long
+j   intmax_t/unintmax_t
+z   size_t
+t   ptrdiff_t
+L   long double
+```
+
+如何解释参数：
+
+```
+d/i  有符号十进制
+o    无符号八进制
+u    无符号十进制
+x/X  无符号十六进制
+c    字符，若lc则宽字符
+s    字符串，若ls则宽字符串
+p    void指针
+%    %
+C    等效lc
+S    等效ls
+```
+
+格式化输入：
+
+```
+int scanf(const char *restrict format, ...);
+int fscanf(FILE *restrict fp, const char *restrict format, ...);
+int sscanf(const char *restrict buf, const char *restrict format, ...);
+// 三个函数，若成功返回赋值的输入项数，若出错或到达文件尾，返回EOF
+```
+
+##### 实现细节
+
+可以对一个流调用fileno获取其描述符，如果要调用dup或fcntl等函数，则需要次函数
+
+```
+int fileno(FILE *fp);
+// 返回与流关联的文件描述符
+```
+
+
+
