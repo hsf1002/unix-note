@@ -1314,3 +1314,30 @@ if (fwrite(&item, sizeof(item), 1, fp) != 1)
 
 返回值可能小于所要求的count：读如果出错或到达文件尾，调用ferror或feof判断是哪种情况，写如果小于则出错
 
+##### 定位流
+
+三种方法：
+
+* ftell和fseek：假定文件的位置可以存放在一个长整型中
+
+```
+long ftell(FILE *fp);	// 若成功，返回文件位置，若出错，返回-1L
+int fseek(FILE *fp, long offset, int fromwhere);	// 若成功，返回0，若出错，返回-1
+void rewind(FILE *fp);  // 可以将一个流设置到起始位置
+```
+
+* ftello和fseeko：使用off_t代替了长整型
+
+```
+long ftello(FILE *fp);	// 若成功，返回文件位置，若出错，返回off_t-1
+int fseeko(FILE *fp, off_t offset, int fromwhere);  // 若成功，返回0，若出错，返回-1
+```
+
+* fgetpos和fsetpos：使用一个抽象数据类型fpos_t记录文件位置（需要移植到非UNIX系统的程序应该使用）
+
+```
+int fgetpos(FILE *restrict fp, fpos_t *restrict pos);
+int fsetpos(FILE *fp, const fpos_t *pos);
+// 两个函数若成功，返回0，若出错，返回非0
+```
+
