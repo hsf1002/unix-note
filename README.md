@@ -1406,5 +1406,29 @@ int fileno(FILE *fp);
 // 返回与流关联的文件描述符
 ```
 
+##### 临时文件
 
+```
+#include <stdio.h>
+char *tmpnam(char *ptr);  // 返回指向唯一路径名的指针
+FILE *tmpfile(void);      // 若成功，返回文件指针，若出错，返回NULL
+```
+
+* tmpnam产生一个与现有文件名不同的一个有效路径名字符串
+* tmpfile创建一个临时二进制文件（wb+），关闭该文件或程序结束将自动删除这种文件
+
+一般先调用tmpnam先生成一个唯一的路径名，再用这个路径名tmpfile创建一个临时文件，并立即unlink它，解除链接并不删除其内容，关闭该文件才会删除其内容
+
+```
+#include <stdlib.h>
+char *mkdtemp(char *template);  // 若成功，返指向目录的指针，若出错，返回NULL
+int *mkstemp(char *template);   // 若成功，返回文件描述符，若出错，返回-1
+```
+
+template这个字符串最后6位设置为XXXXXX的路径名
+
+* mkdtemp创建一个具有唯一名字的目录，mkstemp创建一个具有唯一名字的文件
+
+* 与tmpfile不同，mkstemp创建的临时文件不会自动删除，必须手动解除链接
+* 使用tmpnam和tmpfile有个缺点，在返回唯一的路径名和使用该路径名之间有一个时间窗口，可能被其他进程先创建，而使用mkstemp不存在这个问题
 
