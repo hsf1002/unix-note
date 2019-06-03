@@ -1603,3 +1603,49 @@ int initgroups(const char* username, gid_t basegid);
 * setgroups：由超级用户调用为调用进程设置附属组ID表
 * initgroups：只有超级用户才会调用initgroups，只有initgroups才调用setgroups
 
+##### 其他数据文件
+
+```
+口令 /etc/passwd  <pwd.h>  passwd  getpwnam,getpwuid
+组   /etc/group  <grp.h>  group  getgrnam,getgrgid
+阴影 /etc/shadow  <shadow.h> spwd  getspnam
+主机 /etc/hosts  <netdb.h> hostent  gethostbyname,gethostbyaddr
+网络 /etc/network  <netdb.h> netend  getnetbyname,getnetbyaddr
+协议 /etc/protocols  <netdb.h> protoent getprotobyname,getprotobynumber
+服务 /etc/services  <netdb.h> servent  getservbyname,getservbyport
+```
+
+对于每个文件，至少有三个函数：
+
+* get：读取下一条记录，如果需要，还会打开数据文件
+* set：打开数据文件
+* end：关闭数据文件
+
+##### 登陆账户记录
+
+utmp（who读取）文件记录当前登陆到系统的各个用户，wtmp（last读取）跟踪各个登陆和注销事件
+
+##### 系统标识
+
+uname：返回主机和操作系统相关信息
+
+```
+#include<sys/utsname.h>  
+int uname(struct utsname *name);
+// 若成功，返回非负值，若出错，返回-1
+```
+
+gethostname：只返回主机名，通常是TCP/IP网络上主机名
+
+```
+#include<unistd.h>        
+int gethostname(char *name, int namelen);
+// 若成功，返回0，若出错，返回-1
+```
+
+
+
+
+
+
+
