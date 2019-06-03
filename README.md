@@ -1194,13 +1194,13 @@ type的类型：
    * 读取内容时，可以在**任意位置**进行，但写入内容时，只会**追加**在文件尾部
 
 ```
-限制           R	w   a   r+   w+   a+
+限制              R   w   a   r+   w+   a+
 文件必须存在       Y            Y
-放弃文件之前内容        Y            Y
+放弃文件之前内容    Y            Y
 
 流可读            Y            Y    Y     Y
 流可写                Y    Y   Y    Y     Y
-流只可在尾端写              Y             Y
+流只可在尾端写              Y              Y
 ```
 
 调用flose可以关闭一个打开的流
@@ -1526,6 +1526,8 @@ void endpwent(void);
 
 ##### 阴影口令
 
+/etc/shadow
+
 加密口令是经单向加密算法处理过的用户口令副本，通常将加密口令存放在一个阴影口令的文件中，仅有几个用户ID为root的程序如login和passwd才可以访问
 
 ```
@@ -1557,6 +1559,8 @@ void endspent(void);
 
 ##### 组文件
 
+/etc/group
+
 查看组名或组ID：
 
 ```
@@ -1575,4 +1579,27 @@ struct group *getgrent();
 void setgrent();
 void endgrent();
 ```
+
+##### 附属组
+
+使用附属组可以不必再显式的经常更改组，文件访问权限不仅检查组ID，还要检查附属组ID，一个用户可能参与多个项目，因此需要同时属于多个组
+
+```
+#include<unistd.h>
+int getgroups(int gidsetsize, gid_t grouplist[]);  
+// 若成功，返回附属组ID数，若出错，返回-1，将附加组id填写到grouplist中，最多gidsetsize个
+
+#include<grp.h>
+#include<unistd.h>/*非linux*/
+int setgroups(int ngroups, const gid_t grouplist[]);   // 为进程设置附加组id表
+
+#include<grp.h>   /*on linux and Solaris*/
+#include<unistd.h>/*非linux 和 solaris*/
+int initgroups(const char* username, gid_t basegid);
+// 两个函数，若成功，返回0，若出错，返回-1
+```
+
+* getgroups：将进程所属用户的各附属组ID填写到数组中，如gidesetsize为0，返回附属组ID数
+* setgroups：由超级用户调用为调用进程设置附属组ID表
+* initgroups：只有超级用户才会调用initgroups，只有initgroups才调用setgroups
 
