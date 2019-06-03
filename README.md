@@ -1194,7 +1194,7 @@ type的类型：
    * 读取内容时，可以在**任意位置**进行，但写入内容时，只会**追加**在文件尾部
 
 ```
-限制              R	w   a   r+   w+   a+
+限制           R	w   a   r+   w+   a+
 文件必须存在       Y            Y
 放弃文件之前内容        Y            Y
 
@@ -1523,4 +1523,56 @@ void endpwent(void);
 
 * setpwent：将getpwent的读写地址指向密码文件开头
 * endpwent：关闭这些文件
+
+##### 阴影口令
+
+加密口令是经单向加密算法处理过的用户口令副本，通常将加密口令存放在一个阴影口令的文件中，仅有几个用户ID为root的程序如login和passwd才可以访问
+
+```
+struct spwd 
+{
+    char *sp_namp; /* Login name */
+    char *sp_pwdp; /* Encrypted password */
+    long int sp_lstchg; /* Date of last change */
+    long int sp_min; /* Minimum number of days between changes */
+    long int sp_max; /* Maximum number of days between changes */
+    long int sp_warn; /* Number of days to warn user to change the password */
+    long int sp_inact; /* Number of days the account may be inactive */
+    long int sp_expire; /* Number of days since 1970-01-01 until account expires */
+    unsigned long int sp_flag; /* Reserved */
+};
+```
+
+这组函数与口令文件的一组函数对应：
+
+```
+#include <shadow.h>
+struct spwd *getspnam(const char *name);
+struct spwd getspent(void);
+// 两个函数，若成功，返回指针，若出错或到达文件尾，返回NULL
+
+void setspent(void);
+void endspent(void);
+```
+
+##### 组文件
+
+查看组名或组ID：
+
+```
+#include<grp.h>
+struct group *getgrpid(gid_t gid);
+struct group *getgrnam(const char *name);
+// 两个函数，若成功，返回指针，若出错，返回NULL
+```
+
+如果要搜索整个组文件：
+
+```
+#include<grp.h>
+struct group *getgrent();
+// 若成功，返回指针，若出错或到达文件尾，返回NULL
+void setgrent();
+void endgrent();
+```
 
