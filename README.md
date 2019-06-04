@@ -1643,9 +1643,152 @@ int gethostname(char *name, int namelen);
 // 若成功，返回0，若出错，返回-1
 ```
 
+##### 时间和日期
 
+**time：返回当前时间和日期，即日历时间**
 
+```
+include<time.h>       
+time_t time(time_t *calptr);
+// 若成功，返回时间值，若出错，返回-1
 
+typedef long     time_t;    /* 时间值time_t 为长整型的别名*/
+```
 
+如果参数为非空，时间值也存放在calptr中
 
+**clock_gettime：获取指定时钟的时间**
+
+```
+int clock_gettime(clockid_t clk_id, struct timespec *tp);
+// 若成功，返回0，若出错，返回-1
+int clock_settime(clockid_t clk_id, const struct timespec *tp);
+// 若成功，返回0，若出错，返回-1
+
+struct timespec {
+    time_t tv_sec; 	// seconds 
+    long tv_nsec; 	// and nanoseconds 
+};
+```
+
+* CLOCK_REALTIME：系统实时时间，随系统实时时间改变而改变
+* CLOCK_MONOTONIC：从系统启动这一刻起开始计时，不受系统时间被用户改变
+* CLOCK_PROCESS_CPUTIME_ID：本进程到当前代码系统CPU花费的时间
+* CLOCK_THREAD_CPUTIME_ID：本线程到当前代码系统CPU花费的时
+
+**gettimeofday：已经弃用，有些程序还在使用，提供了比time更高的精度（微秒）**
+
+```
+#include<time.h>    
+int gettimeofday(struct timeval *restrict tp, void *restrict tzp);
+// 总是返回0，tzp的唯一合法值是NULL
+
+struct timeval {
+    long tv_sec;        /* seconds */
+    long tv_usec;       /* microseconds */
+};
+```
+
+##### gmtime和localtime：将日历时间转为分解的时间
+
+秒可以超过59的理由是可以表示润秒
+
+```
+#include<time.h>
+struct tm *gmtime(const time_t *calptr);  		
+// 转化为国际标准时间的年、月、日、时、分、秒等，若出错，返回NULL
+struct tm *localtime(const time_t *calptr);     
+// 转化为本地时间(考虑到本地时区和夏令时标志)，若出错，返回NULL
+
+struct tm {
+   int tm_sec;    /* Seconds (0-60) */
+   int tm_min;    /* Minutes (0-59) */
+   int tm_hour;   /* Hours (0-23) */
+   int tm_mday;   /* Day of the month (1-31) */
+   int tm_mon;    /* Month (0-11) */
+   int tm_year;   /* Year since 1900 */
+   int tm_wday;   /* Day of the week (0-6, Sunday = 0) */
+   int tm_yday;   /* Day in the year (0-365, 1 Jan = 0) */
+   int tm_isdst;  /* Daylight saving time */
+};
+```
+
+##### mktime：本地时间转为time_t
+
+```
+#include<time.h>  
+time_t mktime(struct tm *tmptr);
+// 若成功，返回日历时间，若出错，返回-1
+```
+
+##### strftime：类似于printf的时间值函数，通过可用的多个参数定制产生的字符串
+
+```
+#include<time.h>     
+size_t strftime(char *restrict buf, size_t maxsize, const char *restrict format, const struct tm *restrict tmptr);
+size_t strftime(char *restrict buf, size_t maxsize, const char *restrict format, const struct tm *restrict tmptr, locale_t locale);
+// 两个函数，若有空间，返回存入数组的字符数，否则，返回0
+
+%a	Abbreviated weekday name *	Thu
+%A	Full weekday name *	Thursday
+%b	Abbreviated month name *	Aug
+%B	Full month name *	August
+%c	Date and time representation *	Thu Aug 23 14:55:02 2001
+%C	Year divided by 100 and truncated to integer (00-99)	20
+%d	Day of the month, zero-padded (01-31)	23
+%D	Short MM/DD/YY date, equivalent to %m/%d/%y	08/23/01
+%e	Day of the month, space-padded ( 1-31)	23
+%F	Short YYYY-MM-DD date, equivalent to %Y-%m-%d	2001-08-23
+%g	Week-based year, last two digits (00-99)	01
+%G	Week-based year	2001
+%h	Abbreviated month name * (same as %b)	Aug
+%H	Hour in 24h format (00-23)	14
+%I	Hour in 12h format (01-12)	02
+%j	Day of the year (001-366)	235
+%m	Month as a decimal number (01-12)	08
+%M	Minute (00-59)	55
+%n	New-line character ('\n')	
+%p	AM or PM designation	PM
+%r	12-hour clock time *	02:55:02 pm
+%R	24-hour HH:MM time, equivalent to %H:%M	14:55
+%S	Second (00-61)	02
+%t	Horizontal-tab character ('\t')	
+%T	ISO 8601 time format (HH:MM:SS), equivalent to %H:%M:%S	14:55:02
+%u	ISO 8601 weekday as number with Monday as 1 (1-7)	4
+%U	Week number with the first Sunday as the first day of week one (00-53)	33
+%V	ISO 8601 week number (00-53)	34
+%w	Weekday as a decimal number with Sunday as 0 (0-6)	4
+%W	Week number with the first Monday as the first day of week one (00-53)	34
+%x	Date representation *	08/23/01
+%X	Time representation *	14:55:02
+%y	Year, last two digits (00-99)	01
+%Y	Year	2001
+%z	ISO 8601 offset from UTC in timezone (1 minute=1, 1 hour=100)
+If timezone cannot be termined, no characters	+100
+%Z	Timezone name or abbreviation *
+If timezone cannot be termined, no characters	CDT
+%%	A % sign	%
+```
+
+##### strptime：是strftime反过来的版本
+
+```
+字符串                                   格式化字符串
+    \                                       /
+  strptime                             strftime
+          \                             /
+                struct_tm(分解时间)
+                 gmtime |localtime
+                        |
+                        |mktime
+          tv_sec                       tv_sec
+timeval------------>time_t(日历时间)<------------timespec
+   \                    |                       /                    
+      \                 |                   /                     
+          \             | time         /
+ gettimeofday \         |          / clock_time                        
+                       内核
+```
+
+localtime、mktime和strftime受到环境变量TZ时区的影响，如果定义了TZ则替换系统默认，如果TZ为空，则使用UTC
 
