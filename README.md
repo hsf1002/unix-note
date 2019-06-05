@@ -1792,3 +1792,53 @@ timeval------------>time_t(日历时间)<------------timespec
 
 localtime、mktime和strftime受到环境变量TZ时区的影响，如果定义了TZ则替换系统默认，如果TZ为空，则使用UTC
 
+### 第七章  进程环境
+
+##### main 函数
+
+内核执行C程序调用main函数之前会先调用一个特殊的启动例程，可执行程序将此启动例程指定为程序的起始地址，这由连接器设置，而连接器由编译器调用
+
+##### 进程终止
+
+有八种方式，前五种正常终止，后三种异常终止
+
+* 从main返回
+* 调用exit
+* 调用_exit 或 _Exit
+* 最后一个线程从启动例程返回
+* 最后一个线程调用pthread_exit
+* 调用abort
+* 接收一个信号
+* 最后一个线程对取消请求作出响应
+
+**退出函数**
+
+```
+#include <stdlib.h>
+void exit(int staus);
+void _Exit(int staus);
+
+#include <unistd.h>
+void _exit(int status);
+```
+
+* _exit 和 _Exit立刻进入内核
+* exit先执行一些清理工作（对所有打开的流调用flose）然后返回内核
+* 终止状态：
+  * 如果不带终止状态或main执行了一个无返回值的return或main没有声明返回类型为整型，则程序终止状态未定义
+  * 如果main返回类型是整型，且执行到最后一句返回，终止状态是0
+
+* 内核调用程序的唯一方法是exec函数，进程自愿终止的唯一方法是显式或隐式（exit）的调用_exit 或 _Exit
+
+**函数atexit**
+
+终止处理函数：一个进程最多可以登记32个函数，由exit自动调用
+
+```
+#include <stdlib.h>
+int atexit (void (*func)(void));
+// 若成功，返回0，若出错，返回非0
+```
+
+无参数，也无返回值的登记函数，exit调用它们的顺序与它们登记的顺序相反，同一函数登记多次，也被调用多次
+
