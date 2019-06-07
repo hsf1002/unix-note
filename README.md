@@ -1842,3 +1842,32 @@ int atexit (void (*func)(void));
 
 无参数，也无返回值的登记函数，exit调用它们的顺序与它们登记的顺序相反，同一函数登记多次，也被调用多次
 
+##### 命令行参数
+
+ISO C和POSIX 1都要求argv[argc]是一个空指针
+
+##### 环境表
+
+每个程序都有一张环境表，与参数表一样，是一个指针数组，每个指针（环境指针）指向一个环境变量字符串，而全局变量environ包含了该指针数组的地址。大多数系统支持main带三个参数，其中第三个就是环境表地址，而ISO C和POSIX 1都规定使用environ而不是第三个参数，通常用getenv和putenv来访问特定的环境变量，要查看整个环境，必须使用environ指针
+
+##### C程序的存储空间
+
+* 正文段：CPU执行的机器指令，通常可共享
+* 初始化数据段：明确赋值的变量
+* 未初始化数据段：bss段（block started by symbol）
+* 栈：自动变量以及函数调用保存的信息
+* 堆：动态分配内存
+
+##### 共享库
+
+使得可执行程序不再需要包含公用的库函数，只需在所有进程可引用的存储区保存这个库的一个副本。程序第一次执行或者第一次调用某个库函数时，用动态链接将程序与共享库函数链接，减少了每个可执行程序的长度，但增加了一些运行时开销
+
+```
+gcc 13.c 		// gcc默认使用共享库
+-rwxr-xr-x  1 sky  staff  8616  6  7 07:21 a.out*
+
+gcc -static 13.c 		// gcc阻止使用共享库，macOS报错
+ld: library not found for -lcrt0.o
+clang: error: linker command failed with exit code 1 (use -v to see invocation)
+```
+
