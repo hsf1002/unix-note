@@ -1871,3 +1871,20 @@ ld: library not found for -lcrt0.o
 clang: error: linker command failed with exit code 1 (use -v to see invocation)
 ```
 
+##### 存储空间分配
+
+* malloc：指定字节数，初始值不确定
+* calloc：为指定数量指定长度的对象分配空间，初始值为0
+* realloc：重新分配空间，可能需要将当前分配区的内容移到另一个足够大的区域，新增区的初始值不确定
+* alloca：在当前函数的栈帧上分配空间，无需考虑释放内存，但是某些系统在函数调用后不允许增加栈帧长度，linux是允许的
+
+```
+#include <stdlib.h>
+void* malloc(size_t size);
+void* calloc(size_t nobj, size_t size); 
+void* realloc(void* ptr, size_t newsize);  
+// 若成功，返回非空指针，若出错，返回NULL
+```
+
+这三个函数返回的指针一定是适当对齐的，使其可用于任何数据对象。多数实现所分配的空间比实际要稍大，用来存储分配块的长度、指向下一个分配块的指针等，如果超过一个分配区的尾端或起始位置之前进行写操作，则会改变另一个块的管理记录信息，这种错误是灾难性，不会马上暴露，很难发现
+
