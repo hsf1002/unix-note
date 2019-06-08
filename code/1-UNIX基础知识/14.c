@@ -3,7 +3,10 @@
 
 #define BUFFSIZE 4096
 
-
+/*
+    1. ./.out > data : 将标准输入从标准输出打印并写到文件
+    2. ./.out < input > output: 将文件的内容复制到另一个文件
+*/
 int main(int argc, char *argv[])
 {
     int n;
@@ -13,7 +16,7 @@ int main(int argc, char *argv[])
     while ((n = read(STDIN_FILENO, buf, BUFFSIZE)) > 0)
     {
         // 写到标准输出
-        if (write(STDOUT_FILENO, buf, n) != 0)
+        if (write(STDOUT_FILENO, buf, n) != n)
         {
             printf("write error! \n");
         }
