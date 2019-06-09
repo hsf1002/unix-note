@@ -1888,3 +1888,25 @@ void* realloc(void* ptr, size_t newsize);
 
 这三个函数返回的指针一定是适当对齐的，使其可用于任何数据对象。多数实现所分配的空间比实际要稍大，用来存储分配块的长度、指向下一个分配块的指针等，如果超过一个分配区的尾端或起始位置之前进行写操作，则会改变另一个块的管理记录信息，这种错误是灾难性，不会马上暴露，很难发现
 
+##### 环境变量
+
+应该使用getenv获取一个环境变量的值，而不是直接访问environ
+
+```
+#include<stdlib.h>
+char *getenv(const char *name);
+// 若成功，返回一个以 null 结尾的字符串，为被请求环境变量的值，若出错，返回 NULL
+```
+
+设置环境变量只能影响当前进程和其后生成和调用的任何子进程的环境，不能影响父进程的环境
+
+```
+int putenv(const char* str);  // 若成功，返回0，若错误，返回-1
+int setenv(const char* name, const char* value, int overwrite) // 若成功，返回0，若错误，返回-1
+int unsetenv(const char* name)  // 若成功，返回0，若错误，返回-1 
+```
+
+* putenv：取形式为name=value的字符串，将其放到环境表中，如name已存在，先删除原定义
+* setenv：将name设置为value，如name已存在，那么a-若rewrite非0，先删除原定义；b-若rewrite为0，则不删除（name不设置为新的value，也不出错）。该函数必须分配存储空间
+* unsetenv：删除name的定义，即使不存在也不算出错
+
