@@ -1910,3 +1910,15 @@ int unsetenv(const char* name)  // 若成功，返回0，若错误，返回-1
 * setenv：将name设置为value，如name已存在，那么a-若rewrite非0，先删除原定义；b-若rewrite为0，则不删除（name不设置为新的value，也不出错）。该函数必须分配存储空间
 * unsetenv：删除name的定义，即使不存在也不算出错
 
+##### setjmp和longjmp
+
+goto语句无法跨越函数，执行这类跳转功能的函数式setjmp和longjmp。如果函数层次比较深，以检查返回值的方法逐层返回，就会很麻烦，而setjmp和longjmp可以跳过若干调用栈帧，返回到当前函数调用路径的某一函数
+
+```
+#include <setjmp.h>
+int setjmp(jmp_buf env);	// 若直接调用，返回0，若从longjmp返回，则非0
+void longjmp(jmp_buf env, int value); // 恢复栈帧到setjmp保存的环境变量那里
+```
+
+对于一个setjmp可以有多个longjmp，对于longjmp返回的时候，如果不进行任何优化的编译，全局变量、静态变量、自动变量、易失变量和寄存器变量都不受影响，不会改变，它们的值保存在存储器中；如果进行全部优化的编译（gcc -O test.c），则全局变量、静态变量和易失变量不受优化影响，其值不会改变，而自动变量和寄存器变量的值会恢复，它们保存在寄存器中
+
