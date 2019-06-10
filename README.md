@@ -1922,3 +1922,37 @@ void longjmp(jmp_buf env, int value); // 恢复栈帧到setjmp保存的环境变
 
 对于一个setjmp可以有多个longjmp，对于longjmp返回的时候，如果不进行任何优化的编译，全局变量、静态变量、自动变量、易失变量和寄存器变量都不受影响，不会改变，它们的值保存在存储器中；如果进行全部优化的编译（gcc -O test.c），则全局变量、静态变量和易失变量不受优化影响，其值不会改变，而自动变量和寄存器变量的值会恢复，它们保存在寄存器中
 
+##### getrlimit和setrlimit
+
+每个进程都有一组资源限制，可以通过这两个函数查看和更改，资源限制影响到调用进程并有子进程继承
+
+```
+#include <sys/resource.h>
+int getrlimit(int resource, struct rlimit *rlim);
+int setrlimit(int resource, const struct rlimit *rlim);
+// 两个函数，若成功，返回0，若出错，返回非0
+```
+
+更改资源限制三原则：
+
+* 任何一个进程都可以将一个软限制值改为小于或等于其硬限制值
+* 任何一个进程都可以降低其硬限制值，但它必须大于或等于其软限制值，这种降低对用户是不可逆的
+* 只有超级用户可以提高硬限制值
+
+常见的限制资源：
+
+* RLIMIT_AS：进程的最大虚内存空间，字节为单位
+* RLIMIT_CORE：内核转存文件的最大长度
+* RLIMIT_CPU：最大允许的CPU使用时间，秒为单位。当进程达到软限制，内核将给其发送SIGXCPU
+* RLIMIT_DATA：进程数据段的最大值
+* RLIMIT_FSIZE：进程可建立的文件的最大长度。超出这一限制时，核心会给其发送SIGXFSZ信号
+* RLIMIT_LOCKS：进程可建立的锁和租赁的最大值
+* RLIMIT_MEMLOCK：进程可锁定在内存中的最大数据量，字节为单位
+* RLIMIT_MSGQUEUE：进程可为POSIX消息队列分配的最大字节数
+* RLIMIT_NICE：有效进程的调度优先级，可通过setpriority() 或 nice()调用设置的最大限制值
+* RLIMIT_NOFILE：进程可打开的最大文件数，超出此值，将会产生EMFILE错误
+* RLIMIT_NPROC：实际用户可拥有的最大子进程数
+* RLIMIT_RTPRIO：进程可通过sched_setscheduler 和 sched_setparam设置的最大实时优先级
+* RLIMIT_SIGPENDING：进程可以排队的最大信号数
+* RLIMIT_STACK：栈的最大字节长度
+
