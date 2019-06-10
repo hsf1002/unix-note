@@ -1956,3 +1956,22 @@ int setrlimit(int resource, const struct rlimit *rlim);
 * RLIMIT_SIGPENDING：进程可以排队的最大信号数
 * RLIMIT_STACK：栈的最大字节长度
 
+### 第八章  进程控制
+
+##### 进程标识
+
+* 进程ID虽然唯一但可复用，大多系统采用了延迟复用算法，使得新建进程ID不同于最近终止进程ID，防止将新进程误认为是同一ID的某个已经终止的进程
+
+* ID为0：调度进程或交换进程，是内核的一部分，并不执行磁盘上的程序
+* ID为1：通常是init进程，由内核调用，绝不会终止。一般是/etc/init或/sbin/init，在Mac中是launchd
+
+```
+#include <unistd.h>
+pid_t getpid(void);	// 返回进程id
+pid_t getppid(void); // 返回父进程id
+pid_t getuid(void); // 返回实际用户id
+pid_t geteuid(void); // 返回有效用户id
+pid_t getgid(void); // 返回实际组id
+pid_t getegid(void); // 返回有效组id
+```
+
