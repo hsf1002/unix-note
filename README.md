@@ -2105,3 +2105,33 @@ WUNTRACED	若支持作业控制，返回终止子进程信息和因信号停止�
 WCONTINUED	若支持作业控制，返回收到SIGCONT信号而恢复执行的已停止子进程状态信息
 ```
 
+##### 函数waitid
+
+类似于waitpid，但提供了更多的灵活性
+
+```
+#include <sys/wait.h>
+pid_t waitid(idtype_t idtype, it_t, id, siginfo_t, *infop, int options);
+// 若成功，返回0，若出错，返回-1
+```
+
+使用两个单独的参数表示要等待的子进程所属的类型，id的作用和idtype有关，idtype的类型：
+
+```
+P_PID	等待一个特定的进程：id包含要等待子进程的进程ID
+P_PGID	等待一个特定进程组中的任一子进程：id包含要等待子进程的进程组ID
+P_ALL	等待任一子进程：忽略id
+```
+
+option的状态：
+
+```
+WCONTINUED	等待一个进程，它以前曾被暂停，此后又已继续，但其状态尚未报告
+WEXITED		等待已退出的进程
+WNOHANG		如无可用的子进程退出状态，立即返回而非阻塞
+WNOWAIT		不破坏子进程退出状态。该子进程退出状态可由后续的wait、waitid或waitpid调用取得
+WSTOPPED	等待一个进程，它已经暂停，但其状态尚未报告
+```
+
+
+
