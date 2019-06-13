@@ -2133,5 +2133,44 @@ WNOWAIT		不破坏子进程退出状态。该子进程退出状态可由后续�
 WSTOPPED	等待一个进程，它已经暂停，但其状态尚未报告
 ```
 
+##### 函数wait3和wait4
 
+它们提供的功能比wait、waitpid、waitid要多一个，与附加参数有关，该参数允许内核返回由终止进程及所有子进程使用的资源概括
+
+```
+#include <sys/types.h>
+#include <sys/time.h>
+#include <sys/resource.h>
+#include <sys/wait.h>
+ 
+pid_t wait3(int *status, int options,
+            struct rusage *rusage);
+pid_t wait4(pid_t pid, int *status, int options,
+            struct rusage *rusage);
+// 两个函数：若成功，返回进程ID，若出错，返回-1
+```
+
+返回的资源信息包括：用户CPU时间总量、系统CPU时间总量、缺页次数、接收到信号的次数等
+
+```
+struct rusage {
+                struct timeval ru_utime;
+                struct timeval ru_stime;
+                long   ru_maxrss;       
+                long   ru_ixrss;        
+                long   ru_idrss;        
+                long   ru_isrss;        
+                long   ru_minflt;       
+                long   ru_majflt;       
+                long   ru_nswap;        
+                long   ru_inblock;      
+
+                long   ru_oublock;      
+                long   ru_msgsnd;       
+                long   ru_msgrcv;       
+                long   ru_nsignals;     
+                long   ru_nvcsw;        
+                long   ru_nivcsw;       
+            };
+```
 
