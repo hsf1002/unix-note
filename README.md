@@ -2252,3 +2252,27 @@ int setegid(gid_t gid);
 
 一个非特权用户可将其有效用户ID设置为其实际用户ID或保存的设置用户ID
 
+##### 解释器文件
+
+通常的形式：
+
+```
+! pathname[optional-argument]
+```
+
+如`! /bin/sh`，pathname通常是绝对路径
+
+##### 函数system
+
+```
+#include <stdlib.h>
+int system(const char *cmdstring);
+```
+
+如果cmdstring为空，仅当system命令可用时，返回非0值，这可以确定系统是否支持system函数，UNIX中，system总是可用的，在其实现中调用了fork、waitpid和exec，因此有三种返回值：
+
+* fork失败或waitpid返回除了EINTR之外的出错，则system返回-1，且设置errno以指示错误类型
+* 如果exec失败（表示不能执行shell），返回值如同shell执行了exit(127)一样
+* 否则三个函数都成功，那么system返回shell的终止状态，格式在waitpid中已说明
+
+使用system而不是使用fork和exec的优点：system进行了所需的各种出错处理以及各种信号处理
