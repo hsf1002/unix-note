@@ -2286,3 +2286,74 @@ int system(const char *cmdstring);
 
 会计记录对应于进程而不是程序。fork之后，内核为子进程初始化一个记录，而不是在新程序执行时初始化。虽然exec不会创建一个新的会计记录，但相应记录的命令名改变了，AFORK标志被清除。如果一个进程顺序执行了三个程序，A exec B，B exec C， C exit，只会写一个记录，该记录中的命令名是C，CPU时间是程序A、B、C之和
 
+##### 用户标识
+
+要找到运行程序的用户的登录名：getpwuid(getuid())，如果一个用户有多个登录名，以下函数可以拿到登录名：
+
+```
+#inlucde <unistd.h>
+
+char *getlongin(void);
+// 若成功，返回指向登录名字符串的指针，若出错，返回NULL
+```
+
+有了登录名，可用getpwnam在口令文件中查找用户的相应记录，从而确定登录shell等
+
+##### 进程调度
+
+调度策略和调度优先级由内核确定，进程可以通过调低nice值来降低优先级，只有特权进程允许提高调度权限，可以通过nice函数获取或更改nice值，但只能影响它所在进程
+
+```
+#include <unistd.h>
+
+int nice(int incr);
+// 若成功，返回新的nice值NZERO，若出错，返回-1
+```
+
+* nice值越小，优先级越高
+
+* incr太大，系统会把它降到最大合法值，不给提示，incr太小，系统也会悄无声息的把它提高到最小合法值
+
+getpriority除了可以像nice获取进程的nice值，还可以获取一组相关进程的nice值
+
+```
+#incude <sys/resource.h>
+
+int getpriority(int which, id_t who);
+// 若成功，返回-NZERO---NZERO-1之间的nice值，若出错，返回-1
+```
+
+* which：PRIO_PROCESS表示进程，which：PRIO_PGRP表示进程组，which：PRIO_USER表示用户
+* 如who为0，which为PRIO_USER，表示使用调用进程的实际用户ID
+
+* 如which作用于多个进程，返回所有作用进程中优先级最高的
+
+setpriority可为进程、进程组和属于特定用户ID的所有进程设置优先级
+
+```
+#include <sys/resource.h>
+
+int setpriority(int which, id_t who, int value);
+// 若成功，返回0，若出错，返回-1
+```
+
+##### 进程时间
+
+任一进程都可调用times函数获取它自己以及已终止子进程的：墙上时钟时间、用户CPU时间和系统CPU时间
+
+```
+#include <sys/times.h>
+clock_t times(struct tms *buf);
+// 若成功，返回流逝的墙上时钟时间(以时钟滴答数为单位)，若出错，返回-1
+```
+
+```
+struct tms{
+         clock_t  tms_utime;   /* user cpu time */
+         clock_t  tms_stime;   /* system cpu time */
+         clock_t  tms_cutime;  /* user cpu time of children */
+         clock_t  tms_cstime;  /* system cpu time of children */
+   };
+```
+
+函数的参数可以返回用户CPU时间和系统CPU时间，墙上时钟时间可以通过两次调用该函数的返回值之差计算
