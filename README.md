@@ -2211,3 +2211,44 @@ int fexecve(int fd, char *const argv[],char *const envp[]);
 * exec执行前后实际用户ID和实际组ID保持不变，而有效ID是否改变取决于所执行程序文件的设置用户ID位和设置组ID位是否设置，如果设置了，则有效用户ID变成程序文件所有者ID，组ID处理方式一样
 * 在大多UNIX实现中，只有execve是内核的系统调用，其余六个只是库函数
 
+##### 更改用户ID和更改组ID
+
+```
+#include <unistd.h>
+int setuid(uid_t uid);
+int setgid(gid_t gid);
+两个函数返回值，若成功，返回0，若出错，返回-1
+```
+
+* 若进程具有超级用户权限，setuid将实际用户ID、有效用户ID以及保存的设置用户ID设置为uid
+* 若进程没有超级用户权限，但uid等于实际用户ID或保存的设置用户ID，则setuid只将有效用户ID设置为uid
+* 若上面两个条件都不满足，则errno设置为EPEPM，返回-1
+
+关于内核维护的三个用户ID
+
+* 只有超级用户可以更改实际用户ID（通常是登录时由login设置，因为login是超级用户进程，当它调用setuid时同时设置三个用户ID）
+* 仅当对程序文件设置了用户ID位时，exec函数才设置有效用户ID
+* 保存的设置用户ID由exec函数复制有效用户ID而来
+
+以下两个函数可以交互实际用户ID和有效用户ID的值：
+
+```
+#include <unistd.h>
+int setreuid(uid_t ruid, uid_t euid);
+int setregid(gid_t rgid, gid_t egid);
+两个函数返回值，若成功，返回0，若出错，返回-1
+```
+
+一个非特权用户总能交互实际用户ID和有效用户ID，这就允许一个设置用户ID程序交换成用户的普通权限，以后又可以再次交换回设置用户ID的权限
+
+以下两个函数只更改有效用户ID和有效组ID：
+
+```
+#include <unistd.h>
+int seteuid(uid_t uid);
+int setegid(gid_t gid);
+两个函数返回值，若成功，返回0，若出错，返回-1
+```
+
+一个非特权用户可将其有效用户ID设置为其实际用户ID或保存的设置用户ID
+
