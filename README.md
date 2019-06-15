@@ -2174,3 +2174,40 @@ struct rusage {
             };
 ```
 
+##### 竞争条件
+
+当多个进程都企图处理共享数据，而最后的结果取决于进程运行的顺序时，发生了竞争条件。如果一个进程希望等待一个子进程终止，必须调用wait函数中的一个，如果一个进程要等待父进程终止，可以轮询：
+
+```
+while (getppid() != -1)
+	sleep(1)
+```
+
+问题是浪费了CPU资源，为了避免竞争条件和轮询，多个进程间需要某种形式的信号发送和接收的方法。主要是五个实现，TELLWAIT、TELL PARENT、TELL CHILD、WAIT PARENT、 WAIT CHILD
+
+##### 函数exec
+
+调用exec时，并不创建新进程，新程序完全替代原进程执行的程序，包括进程的正文段、数据段、堆栈等。通过fork创建进程、exec执行新程序、wait和exit等待终止和处理终止，这些构成了基本的进程控制原语
+
+```
+#include <unistd.h>
+
+int execl(const char *path, const char *arg, ...);
+int execlp(const char *file, const char *arg, ...);
+int execle(const char *path, const char *arg,..., char * const envp[]);
+int execv(const char *path, char *const argv[]);
+int execvp(const char *file, char *const argv[]);
+int execve(const char *file, char *const argv[],char *const envp[]);
+int fexecve(int fd, char *const argv[],char *const envp[]);
+```
+
+* 第一个参数是文件名、文件描述符或文件路径，当path作为参数时，如果包含/，视为路径名，否则按照PATH环境变量指定的目录搜索可执行文件
+* 后缀l表示列表list，v表示矢量vector，前三个函数的每个命令行参数都是一个独立的参数，而后四个函数应先构造一个指向各参数的指针数组，再将其作为参数传递
+* 以e结尾的三个函数可以传递一个指向环境字符串指针数组的指针，其他四个函数则是使用调用进程中的environ变量为新程序复制现有的环境
+* 字母p表示该函数取path作为参数，并且用PATH环境变量寻找可执行文件
+* l与v互斥，p与e互斥，p与f互斥
+
+* 进程中每个打开描述符都有一个执行时关闭标志FD_CLOEXEC，若设置了此标志，执行exec时关闭该描述符
+* exec执行前后实际用户ID和实际组ID保持不变，而有效ID是否改变取决于所执行程序文件的设置用户ID位和设置组ID位是否设置，如果设置了，则有效用户ID变成程序文件所有者ID，组ID处理方式一样
+* 在大多UNIX实现中，只有execve是内核的系统调用，其余六个只是库函数
+
