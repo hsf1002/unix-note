@@ -2418,3 +2418,31 @@ SIGVTALRM  终止进程     虚拟计时器到时
 * 用户没有写当前工作目录的权限
 * 文件太大，RLIMIT_CORE的限制
 
+##### 函数signal
+
+```
+#include <signal.h>
+void (signal(int signo, void (*func)(int)))(int);
+// 若成功，返回以前的信号处理配置，若出错，返回SIG_ERR
+
+typedef void Sigfunc(int);
+Sigfunc *signal(int, Sigfunc *);
+```
+
+signal的语义与实现有关，最好使用sigaction函数代替signal函数
+
+* signo是信号名
+* func是常亮SIG_IGN（忽略此信号）、SIG_DFL（系统默认动作）或当前接到此信号后要调用的函数地址
+
+##### 中断的系统调用
+
+系统调用可分为低速系统调用和其他系统调用，低速系统调用是可能会使进程永远阻塞的一类系统调用，包括：
+
+* 如果某些类型文件的数据不存在，进行读操作
+* 如果数据不能被相同的类型文件立即接受，进行写操作
+* 某些条件发生之前打开某些类型文件
+* pause函数
+* 某些ioctl函数
+* 某些进程间通信函数
+
+除非发生硬件错误，否则IO操作总能很快返回
