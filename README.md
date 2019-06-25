@@ -2486,3 +2486,29 @@ kill(getpid(), signo);
 
 signo编号0为空信号，kill仍进行正常的错误检查，但不发送信号，常用于确定一个特定进程是否仍然存在，若向一个并不存在的进程发送信号，则kill返回-1，errno被设置为ESRCH
 
+##### 函数alarm和pause
+
+alarm可以设置一个定时器，超时时产生SIGALRM信号，如果忽略或不捕捉此信号，默认动作是终止调用该函数的进程，大多数进程都会捕捉此信号
+
+```
+#include <unistd.h>
+
+unsigned int alarm(unsigned int seconds);
+// 返回值：0或者以前设置闹钟时间的余留秒数
+```
+
+* 每个进程只能有一个闹钟时间
+* 如果调用alarm时，之前注册的闹钟时间没有超时，则余留值作为本次alarm调用的返回值，以前注册的闹钟时间被新值替换
+* 如果调用alarm时，之前注册的闹钟时间没有超时，且本地alarm调用的参数是0，则取消以前的闹钟，余留值仍作为本次alarm调用的返回值
+
+pause使调用进程挂起，直到捕捉一个信号
+
+```
+#include <unistd.h>
+
+int pause(void);
+// 返回值：-1， errno设置为EINTR
+```
+
+只有执行了一个信号处理函数并从其返回时，pause才返回
+
