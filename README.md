@@ -2512,3 +2512,30 @@ int pause(void);
 
 只有执行了一个信号处理函数并从其返回时，pause才返回
 
+##### 信号集
+
+```
+#include <signal.h>
+
+int sigemptyset(sigset_t *set);
+int sigfillset(sigset_t *set);
+int sigaddset(sigset_t *set, int signo);
+int sigdelset(sigset_t *set, int signo);
+// 这四个函数，若成功，返回0，若出错，返回-1
+
+int sigismember(sigset_t *set, int signo);
+// 如果是返回1，如果不是，返回0，如果给定的信号无效，返回-1；
+```
+
+* sigemptyset：将信号集初始化为set指向的信号集，清除其中所有信号
+* sigfillset：将信号集初始化为set指向的信号集中的信号，sigfillset或sigemptyset只执行一次
+* sigaddset：把信号signo添加到信号集set中
+* sigdelset：把信号signo从信号集set中删除
+* sigismember：判断给定的信号signo是否是信号集中的一个成员
+
+
+
+
+
+
+
