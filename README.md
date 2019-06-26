@@ -2533,7 +2533,7 @@ int sigismember(sigset_t *set, int signo);
 * sigdelset：把信号signo从信号集set中删除
 * sigismember：判断给定的信号signo是否是信号集中的一个成员
 
-##### sigprocmask
+##### 函数sigprocmask
 
 检测或更改进程的信号屏蔽字
 
@@ -2555,6 +2555,17 @@ int sigpromask(int how, const sigset_t *restrict set, sigset_t *restrict oset);
   ```
 
 * 如果set是空指针，那么不改变进程的信号屏蔽字，how无意义
+
+##### 函数sigpending
+
+返回的信号集由参数set返回，对于调用进程而言，其中的各个信号是阻塞不能传递的，因而一定是当前未决的
+
+```
+#include <signal.h>
+
+int sigpending(sigset_t *set);
+// 若成功，返回0，若出错，返回-1
+```
 
 
 
