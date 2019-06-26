@@ -2533,9 +2533,28 @@ int sigismember(sigset_t *set, int signo);
 * sigdelset：把信号signo从信号集set中删除
 * sigismember：判断给定的信号signo是否是信号集中的一个成员
 
+##### sigprocmask
 
+检测或更改进程的信号屏蔽字
 
+```
+#include <signal.h>
 
+int sigpromask(int how, const sigset_t *restrict set, sigset_t *restrict oset);
+// 若成功，返回0，若出错，返回-1
+```
+
+* 若oset是非空指针，那么进程的当前信号屏蔽字通过oset返回
+
+* 若set是非空指针，那么参数how指示如何修改当前信号屏蔽字
+
+  ```
+  SIG_BLOCK：将set指向的包含了希望阻塞的信号集，与当前信号屏蔽字，相并，或操作
+  SIG_UNBLOCK：将set指向的包含了希望阻塞的信号集的补集，与当前信号屏蔽字，相交，与操作
+  SIG_SETMASK：将当前的信号集合设置为set指向的信号集，赋值操作
+  ```
+
+* 如果set是空指针，那么不改变进程的信号屏蔽字，how无意义
 
 
 
