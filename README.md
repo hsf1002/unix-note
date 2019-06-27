@@ -2649,3 +2649,19 @@ union sigval {
 
 context是无类型参数，可被强制转为ucontext_t结构类型，用于标识信号传递时进程上下文
 
+##### 函数sigsetjmp和siglongjmp
+
+非局部转移的longjmp函数可以返回到程序的主循环，但是有一个问题，当捕捉到一个信号时，进入信号处理函数，此时当前信号被自动的加到进程的信号屏蔽字中，这就阻止了后来产生的这种信号中断该信号处理函数
+
+```
+#include <setjmp.h>
+
+int sigsetjmp(sigjmp_buf env, int savemask);
+// 若直接调用则返回0，若从siglongjmp调用返回则返回非0值
+
+void siglongjmp(sigjmp_buf env, int val);
+```
+
+* 若savemask非0，则sigsetjmp在env中保存进程的当前信号屏蔽字
+* 如果savemask非0，调用siglongjmp从其中恢复保存的信号屏蔽字
+
