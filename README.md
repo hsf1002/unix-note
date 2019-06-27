@@ -2665,3 +2665,22 @@ void siglongjmp(sigjmp_buf env, int val);
 * 若savemask非0，则sigsetjmp在env中保存进程的当前信号屏蔽字
 * 如果savemask非0，调用siglongjmp从其中恢复保存的信号屏蔽字
 
+##### 函数sigsuspend
+
+```
+#include <signal.h>
+
+int sigsuspend(const sigset_t *sigmask);
+// 总是返回-1，且将errno设置为EINTR
+```
+
+* 进程的信号屏蔽字设置为sigmask
+* 在捕捉到一个信号或发生了一个会终止该进程的信号之前，该进程被挂起
+* 如果捕捉到一个信号且从该信号处理函数返回，则sigsuspend返回，且该进程的信号屏蔽字设置为调用sigsuspend之前的值
+
+主要由三种用途：
+
+* 保护代码临界区，使其不被特定信号中断
+* 等待一个信号处理程序设置一个全局变量
+* 实现父进程、子进程之间的同步
+
