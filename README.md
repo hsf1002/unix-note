@@ -2684,3 +2684,53 @@ int sigsuspend(const sigset_t *sigmask);
 * 等待一个信号处理程序设置一个全局变量
 * 实现父进程、子进程之间的同步
 
+##### 函数abort
+
+```
+#include <stdlib.h>
+
+void abort(void);
+```
+
+将SIGABRT信号发送给调用进程，进程不应忽略此信号
+
+##### 函数system
+
+POSIX要求system忽略SIGINT和SIGQUIT，阻塞SIGCHLD。Bourne shell的实现，终止状态是128+信号编号，如SIGINT是2，SIGQUIT是3
+
+##### 函数sleep、nanosleep和clock_nanosleep
+
+```
+#include <unistd.h>
+
+unsigned int sleep(unsigned int seconds);
+// 返回0或未休眠的秒数
+```
+
+此函数使得调用进程挂起直到满足以下条件之一：
+
+* 已经过了seconds的墙上时钟时间
+* 调用进程捕获到一个信号并从信号处理程序返回
+
+nanosleep提供纳秒级别的进度
+
+```
+#include <time.h>
+
+int nanosleep(const struct timespec *reqtp, struct timespec *remtp);
+// 若休眠到要求的时间，返回0，若出错，返回-1
+```
+
+* reqtp用秒和纳秒指定了需要休眠的时间长度
+* 如果某个信号中断了休眠间隔，进程并没有终止，remtp就会被设置为未休眠完的时间长度，不需要就设置为NULL
+
+随着多个系统时钟的引入，需要使用相对于特定时钟的延迟时间来挂起调用线程
+
+```
+#include <time.h>
+int clock_nanosleep(clockid_t clock_id, int flags, const struct timespec *reqtp, struct timespec *remtp);
+```
+
+* clock_id指定了计算延迟基于的时钟
+* flags为0表示相对时间，如休眠的时间长度，flags为TIMER_ABSTIME表示绝对时间，如某个特定时间，使用绝对时间可以改善进度
+
