@@ -2734,3 +2734,49 @@ int clock_nanosleep(clockid_t clock_id, int flags, const struct timespec *reqtp,
 * clock_id指定了计算延迟基于的时钟
 * flags为0表示相对时间，如休眠的时间长度，flags为TIMER_ABSTIME表示绝对时间，如某个特定时间，使用绝对时间可以改善进度
 
+##### 函数sigqueue
+
+使用排队必须做如下几个操作
+
+1. 使用sigaction函数安装信号处理程序时指定SA_SIGINFO标志
+2. 在sigaction结构的sa_sigacton而不是通常的sa_handler提供信号处理程序
+3. 使用sigqueue发送信号
+
+```
+#include <signal.h>
+
+int sigqueue(pid_t pid, int signo, const union sigval value);
+// 若成功，返回0，若出错，返回-1
+```
+
+sigqueue只能把信号发送给单个进程，可以使用value传递整型或指针，发送的信号不能被无限排队，最大为SIGQUEUE_MAX
+
+##### 信号名和编号
+
+```
+extern char *sys_siglist[];
+```
+
+某些系统提供这样的数组，下标是信号编号，数组元素是指向信号的信号名字符串的指针
+
+```
+#include <signal.h>
+
+void psignal(int signo, const char *msg);
+// 类似于perror
+```
+
+```
+#include <signal.h>
+
+void psiginfo(const siginfo *info, const char *msg);
+// 工作方式与psignal类似，可以输出除了信号编号以外的更多信息
+```
+
+```
+#include <string.h>
+
+char *strsignal(int signo);
+// 类似于stderror，返回描述该信号字符串的指针
+```
+
