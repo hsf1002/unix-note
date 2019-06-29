@@ -2441,11 +2441,25 @@ signal的语义与实现有关，最好使用sigaction函数代替signal函数
 * 如果某些类型文件的数据不存在，进行读操作
 * 如果数据不能被相同的类型文件立即接受，进行写操作
 * 某些条件发生之前打开某些类型文件
-* pause函数
+* pause函数和wait函数
 * 某些ioctl函数
 * 某些进程间通信函数
 
 除非发生硬件错误，否则IO操作总能很快返回
+
+```
+again:
+    if ((n = read(fd, buf, BUFFSIZE)) < 0)
+    {
+        if (errno == EINTR)
+        {
+            goto again;
+            // handle other
+        }
+    }
+```
+
+某些系统调用被中断后可以自动重启，包括：ioctl、read、readv、write、writev、wait和waitpid，前五个只有对低速设备进行操作时才会被信号中断，而wait和waitpid在捕捉到信号时总是被中断，某些程序可能不希望这些函数中断后重启，4.3BSD允许进程基于每个信号禁用此功能
 
 ##### 可重入函数
 
@@ -2454,6 +2468,8 @@ signal的语义与实现有关，最好使用sigaction函数代替signal函数
 * 使用静态数据结构，如getpwnam将其结果存放到静态存储单元
 * 调用malloc或free
 * 标准的IO函数，如信号处理函数中的printf可能中断主程序的printf的调用
+
+当在信号处理程序中调用可重入函数时，应该在调用前保存errno，调用后恢复errno，如经常被捕捉的信号SIGCHLD，其信号处理程序通常要调用wait函数，而各种wait函数都能改变errno
 
 ##### SIGCLD语义
 
