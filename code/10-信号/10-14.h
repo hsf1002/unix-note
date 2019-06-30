@@ -51,6 +51,7 @@ pr_mask(const char *str)
             printf(" SIGUSR1");
         if (sigismember(&sigset, SIGUSR2))
             printf(" SIGUSR2");
+        printf("\n");
     }
     
     // 恢复错误码
