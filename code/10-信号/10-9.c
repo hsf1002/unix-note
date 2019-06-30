@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include <unistd.h>
 #include <signal.h>
+#include <setjmp.h>
 
 
 static void 
@@ -26,9 +27,40 @@ int sleep1(int seconds)
     if (signal(SIGALRM, sig_alarm1) == SIG_ERR)
         return seconds;
 
+    // 开启定时
     alarm(seconds);
+    // 一般很快会调用，等待SIGALRM发生时，唤醒
     pause();
     
+    return(alarm(0));
+}
+
+
+static jmp_buf env_alrm;
+
+static void 
+sig_alarm2(int signo)
+{
+    longjmp(env_alrm, 1);
+}
+
+/*
+    sleep的第二种实现，使用setjmp解决第三个问题，还存第一第二个问题
+*/
+int sleep1(int seconds)
+{
+    if (signal(SIGALRM, sig_alarm2) == SIG_ERR)
+        return seconds;
+
+    if (setjmp(env_alrm) == 0)
+    {
+        // 开启定时
+        alarm(seconds);
+        // 下个捕获信号，即SIGALRM发生时，才会唤醒
+        pause();
+    }
+    
+    // 关闭闹钟，返回剩余时间
     return(alarm(0));
 }
 
