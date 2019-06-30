@@ -47,7 +47,7 @@ sig_alarm2(int signo)
 /*
     sleep的第二种实现，使用setjmp解决第三个问题，还存第一第二个问题
 */
-int sleep1(int seconds)
+int sleep2(int seconds)
 {
     if (signal(SIGALRM, sig_alarm2) == SIG_ERR)
         return seconds;
@@ -64,3 +64,41 @@ int sleep1(int seconds)
     return(alarm(0));
 }
 
+static void
+sig_int(int signo)
+{
+    int i, j;
+    volatile int k; // volatile阻止优化编译去掉循环
+
+    printf("\n sig_int starting... \n");
+
+    for (i=0; i<300000; i++)
+    {
+        for (j=0; j<4000; j++)
+            k += i*j;
+    }
+
+    printf("sig_int finished \n");
+}
+
+/*
+    如果SIGALRM中断了某个其他信号处理程序，则调用longjmp会提早终止该信号处理程序
+
+./a.out 
+^C
+ sig_int starting... 
+sleep2 returned, unsleep = 0
+
+*/
+int main(void)
+{
+    unsigned int unsleep;
+
+    if (signal(SIGINT, sig_int) == SIG_ERR)
+        perror("signal(SIGINT) error \n");
+
+    // sleep2中的longjmp使得另一个信号处理程序sig_init提早终止，即使它未完成也会如此
+    unsleep = sleep2(3);
+    printf("sleep2 returned, unsleep = %u \n", unsleep);
+    exit(0);
+}
