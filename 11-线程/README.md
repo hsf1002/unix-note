@@ -9,3 +9,23 @@
 
 每个线程都包含表示执行环境所必须的信息，其中有进程中标识线程的线程ID、一组寄存器值、栈、调度优先级和策略、信号屏蔽字、errno变量以及线程私有数据
 
+##### 线程标识
+
+线程ID只有在它所属的进程上下文中才有意义，用pthread_t这个类型标识的非负整数，必须用函数比较两个线程ID：
+
+```
+#include <pthread.h>
+
+int pthread_equal(pthread_t tid1, pthread_t tid2);
+// 若相等，返回非0，否则，返回0
+```
+
+线程可以通过调用pthread_self来获取自身的线程ID：
+
+```
+#include <pthread.h>
+
+pthread_t pthread_self(void);
+// 返回值：调用线程的线程ID
+```
+
