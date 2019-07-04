@@ -29,3 +29,17 @@ pthread_t pthread_self(void);
 // 返回值：调用线程的线程ID
 ```
 
+##### 线程创建
+
+```
+int pthread_create(pthread_t * __restrict tidp,
+		const pthread_attr_t * __restrict attr,
+		void * (*start_rtn)(void *),
+		void * __restrict arg);
+// 若成功，返回0，若失败，返回错误编号		
+```
+
+* 若成功返回，新创建线程的ID会被设置为tidp指向的内存单元
+* 新线程从start_rtn开始运行，该函数只有一个无类型指针参数，如果需要多个参数，需要将他们放到一个结构体中
+* 线程创建后，不能保证新线程先运行，还是调用线程先运行
+
