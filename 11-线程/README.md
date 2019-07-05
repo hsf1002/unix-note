@@ -43,3 +43,72 @@ int pthread_create(pthread_t * __restrict tidp,
 * 新线程从start_rtn开始运行，该函数只有一个无类型指针参数，如果需要多个参数，需要将他们放到一个结构体中
 * 线程创建后，不能保证新线程先运行，还是调用线程先运行
 
+##### 线程终止
+
+如果进程中任意线程调用了exit、_Exit、或 _exit，则整个进程就会终止，如果收到了默认动作是终止进程的信号，也是类似，单个线程有三种方式退出：
+
+* 从启动例程中返回，返回值是线程的退出码
+* 被同一进程的其他线程取消
+* 调用pthread_exit
+
+```
+void pthread_exit(void * rval_ptr);
+```
+
+rval_ptr是无类型指针，与传给启动例程的单个参数类似
+
+```
+int pthread_join(pthread_t thread, void ** rval_ptr)
+// 若成功，返回0，若出错，返回错误编号
+```
+
+如果某个线程调用了pthread_join，则一直阻塞，直到指定的线程thread调用pthread_exit、被取消（rval_ptr指定的内存单元设置为PTHREAD_CANCELED）或从启动例程返回（rval_ptr包含返回码）
+
+线程可以通过pthread_cancel来请求取消同一进程中的其他线程
+
+```
+int pthread_cancel(pthread_t tid);
+// 若成功，返回0，若出错，返回错误编号
+```
+
+默认情况下，会使得tid的线程如同调用了参数为PTHREAD_CANCELED的pthread_exit函数，但是线程可以选择忽略取消或者控制如何被取消，pthread_cancel并不实际取消，仅仅提出请求
+
+线程清理程序：退出时调用的函数，与进程退出时可以用atexit函数是类似的，一个线程可以注册多个清理处理程序，它们的执行顺序与注册顺序相反
+
+```
+void pthread_cleanup_push(void (*rtn)(void *), void *arg);
+void pthread_cleanup_pop(int execute);
+// macOS中以宏实现
+```
+
+当执行以下动作时，清理函数rtn由pthread_cleanup_push调度：
+
+* 调用pthread_exit时
+* 相应取消请求时
+* 用非零execute参数调用pthread_cleanup_pop时
+* 如果execute参数为0，则清理函数不被调用
+* 如果线程是通过它的启动例程中返回而终止，它的清理程序就不会被调用
+
+进程和线程之间的相似之处
+
+```
+进程原语        线程原语            描述
+fork       pthread_create        创建新的控制流
+exit       pthread_exit          从控制流中退出
+waitpid    pthread_join          得到退出状态
+atexit     pthread_cancel_push   注册退出函数
+getpid     pthread_self          获取控制流ID
+abort      pthread_cancel        请求控制流的非正常退出
+```
+
+可以调用pthread_detach分离线程
+
+```
+int pthread_detach(pthread_t tod);
+// 若成功，返回0，否则，返回错误编码
+```
+
+* 默认线程的终止状态会保存直到调用pthread_join
+* 如果线程已经被分离，其底层存储资源可以在线程终止时立即被收回
+* 如果线程已经被分离，调用pthread_join会产生未定义行为
+
