@@ -112,3 +112,29 @@ int pthread_detach(pthread_t tod);
 * 如果线程已经被分离，其底层存储资源可以在线程终止时立即被收回
 * 如果线程已经被分离，调用pthread_join会产生未定义行为
 
+##### 线程同步
+
+当一个线程可以修改的变量，其他线程可以读或写的时候，需要对这些线程进行同步。在变量修改时间多于一个存储器访问周期的处理器解构中，当读与写这两个周期交叉时，这种不一致就会出现
+
+##### 互斥量
+
+互斥量本质上是一把锁，使用前必须初始化，或者用静态分配的常量PTHREAD_MUTEX_INITIALIZER，或者用pthread_mutex_init进行初始化，用pthread_mutex_destroy释放内存
+
+```
+#include <pthread.h>
+
+int pthread_mutex_init(pthread_mutex_t * __restrict mutex,
+		const pthread_mutexattr_t * __restrict attr);
+int pthread_mutex_destroy(pthread_mutex_t *mutex);
+// 两个函数返回值：若成功，返回0，若出错，返回错误编号
+```
+
+```
+int pthread_mutex_lock(pthread_mutex_t *mutex);
+int pthread_mutex_trylock(pthread_mutex_t *mutex);
+int pthread_mutex_unlock(pthread_mutex_t *mutex);
+// 三个函数返回值：若成功，返回0，若出错，返回错误编号
+```
+
+如果线程不希望阻塞，调用pthread_mutex_trylock尝试对互斥量加锁，如果成功锁住，不会阻塞直接返回0，否则返回EBUSY
+
