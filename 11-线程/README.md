@@ -142,7 +142,7 @@ int pthread_mutex_unlock(pthread_mutex_t *mutex);
 
 如果试图对一个互斥量加锁两次，其自身会陷入死锁状态；或者程序中有一个以上的互斥量，两个线程互相请求对方所拥有的资源时，也会死锁。可以通过仔细控制互斥量加锁的顺序来避免死锁，如所有线程总是在对互斥量B加锁前先锁住互斥量A，但是对互斥量的排序有时候比较困难，可以使用pthread_mutex_trylock避免死锁，如果不能获取锁，先释放已经占有的资源，做好清理工作，过一段时间再试
 
-##### 函数pthread_mutex_timedlock
+##### 带有超时的互斥量
 
 pthread_mutex_timedlock互斥量原语运行绑定阻塞时间
 
@@ -171,4 +171,40 @@ maketimeout(struct timespec *tsp, long minutes)
     tsp->tv_sec += minutes * 60;
 }
 ```
+
+##### 读写锁
+
+与互斥量类似，允许更高的并行性。读写锁有三种状态：读模式下加锁、写模式下加锁和不加锁。一次一个线程可以占有写模式的读写锁，但多个线程可以同时占有读模式的读写锁。当是写加锁模式时，所有试图对这个锁加锁的线程都会阻塞，当是读加锁模式时，所有试图以读模式进行加锁的线程都可以得到访问权。读写锁非常适合对数据结构读的次数远大于写的情况。也称为共享互斥锁，当是读模式时，是共享的，当是写模式时，是互斥的
+
+```
+int pthread_rwlock_init(pthread_rwlock_t * __restrict rwlock,
+						const pthread_rwlockattr_t * __restrict attr);
+int pthread_rwlock_destroy(pthread_rwlock_t * rwlock);
+// 两个函数的返回值：若成功，返回0，若出错，返回错误编号
+```
+
+```
+int pthread_rwlock_rdlock(pthread_rwlock_t *); // 以读模式加锁
+int pthread_rwlock_wrlock(pthread_rwlock_t *); // 以写模式加锁
+int pthread_rwlock_unlock(pthread_rwlock_t *); // 不管以何种模式加锁，以此解锁
+// 三个函数返回值：若成功，返回0，若出错，返回错误编号
+```
+
+```
+int pthread_rwlock_tryrdlock(pthread_rwlock_t *);
+int pthread_rwlock_trywrlock(pthread_rwlock_t *);
+// 两个函数返回值：若成功，返回0，若出错，返回错误编号
+```
+
+##### 带有超时的读写锁
+
+```
+int pthread_rwlock_timedrdlock (pthread_rwlock_t *__restrict __rwlock,
+                                const struct timespec *__restrict __abstime);
+int pthread_rwlock_timedwrlock (pthread_rwlock_t *__restrict __rwlock,
+                                const struct timespec *__restrict __abstime);
+// 两个函数返回值：若成功，返回0，若出错，返回错误编号
+```
+
+与pthread_mutex_timedlock一样，超时指的是绝对时间
 
