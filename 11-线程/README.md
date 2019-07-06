@@ -154,7 +154,7 @@ int pthread_mutex_timedlock(pthread_mutex_t *restrict mutex,
 // 若成功，返回0，若出错，返回错误编号
 ```
 
-超时指的是绝对时间，可以通过如下方式获取：
+超时指的是绝对时间，可以使用clock_gettime（并非所有平台都支持），或通过如下方式获取：
 
 ```
 #include <sys/time.h>
@@ -207,4 +207,31 @@ int pthread_rwlock_timedwrlock (pthread_rwlock_t *__restrict __rwlock,
 ```
 
 与pthread_mutex_timedlock一样，超时指的是绝对时间
+
+##### 条件变量
+
+条件变量与互斥量一起使用时，允许线程以无竞争的方式等待特定的条件发生，使用前必须对它进行初始化，可以用PTHREAD_COND_INITIALIZER或pthread_cond_init进行初始化
+
+```
+int pthread_cond_init(pthread_cond_t * __restrict cond,
+					const pthread_condattr_t * _Nullable __restrict attr);
+int pthread_cond_destroy(pthread_cond_t *cond);		
+// 两个函数返回值：若成功，返回0，若出错，返回错误编号
+```
+
+阻塞，等待唤醒：
+
+```
+int pthread_cond_wait(pthread_cond_t * __restrict cond, pthread_mutex_t * __restrict mutex);
+int pthread_cond_timedwait(pthread_cond_t * __restrict cond, pthread_mutex_t * __restrict mutex, const struct timespec * _Nullable __restrict tsptr);
+// 两个函数返回值：若成功，返回0，若出错，返回错误编号
+```
+
+唤醒：
+
+```
+int pthread_cond_signal(pthread_cond_t *cond);	// 至少唤醒一个等待该条件的线程
+int pthread_cond_broadcast(pthread_cond_t *cond); // 唤醒所有等待该条件的线程
+// 两个函数返回值：若成功，返回0，若出错，返回错误编号
+```
 
