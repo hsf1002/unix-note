@@ -138,3 +138,37 @@ int pthread_mutex_unlock(pthread_mutex_t *mutex);
 
 如果线程不希望阻塞，调用pthread_mutex_trylock尝试对互斥量加锁，如果成功锁住，不会阻塞直接返回0，否则返回EBUSY
 
+##### 避免死锁
+
+如果试图对一个互斥量加锁两次，其自身会陷入死锁状态；或者程序中有一个以上的互斥量，两个线程互相请求对方所拥有的资源时，也会死锁。可以通过仔细控制互斥量加锁的顺序来避免死锁，如所有线程总是在对互斥量B加锁前先锁住互斥量A，但是对互斥量的排序有时候比较困难，可以使用pthread_mutex_trylock避免死锁，如果不能获取锁，先释放已经占有的资源，做好清理工作，过一段时间再试
+
+##### 函数pthread_mutex_timedlock
+
+pthread_mutex_timedlock互斥量原语运行绑定阻塞时间
+
+```
+#include<pthread.h>
+
+int pthread_mutex_timedlock(pthread_mutex_t *restrict mutex,
+							const struct timespec *restrict tsptr);
+// 若成功，返回0，若出错，返回错误编号
+```
+
+超时指的是绝对时间，可以通过如下方式获取：
+
+```
+#include <sys/time.h>
+
+void
+maketimeout(struct timespec *tsp, long minutes)
+{
+    struct timeval now;
+
+    gettimeofday(&now, NULL);
+    tsp->tv_sec = now.tv_sec;
+    tsp->tv_nsec = now.tv_usec * 1000;  /* usec -> nsec */
+    
+    tsp->tv_sec += minutes * 60;
+}
+```
+
