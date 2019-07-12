@@ -154,3 +154,14 @@ int pthread_condattr_setclock(pthread_condattr_t *attr, clockid_t *clock_id);
 ***
 
 屏障属性
+
+只支持进程共享属性
+
+```
+int pthread_barrierattr_init(pthread_barrierattr_t* attr);
+int pthread_barrierattr_destroy(pthread_barrierattr_t* attr);
+int pthread_barrierattr_setshared(pthread_barrierattr_t* attr,int pshared);
+int pthread_barrierattr_getshared(const pthread_barrierattr_t* restrict attr,int* restrict pshared);
+// 四个函数返回值：若成功，返回0，若出错，返回错误编号
+```
+
