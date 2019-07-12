@@ -69,7 +69,9 @@ int pthread_attr_getstacksize(pthread_attr_t *attr, size_t *stacksize);
 
 ##### 同步属性
 
-<u>互斥量属性</u>
+***
+
+互斥量属性
 
 ```
 int pthread_mutexattr_init(pthread_mutexattr_t *attr);  
@@ -113,14 +115,26 @@ int pthread_mutexattr_destroy(pthread_mutexattr_t *attr);
 
   如果属性是PTHREAD_MUTEX_RECURSIVE，可以进行多次加锁，但是解锁次数和加锁次数不一致，将无法解锁
 
+***
+
+读写锁属性
+
+唯一支持的属性是进程共享属性与互斥量的共享属性相同
+
+```
+int pthread_rwlockattr_init(pthread_rwlockattr_t *attr); 
+int pthread_rwlockattr_destroy(pthread_rwlockattr_t *attr);
+int pthread_rwlockattr_getpshared(const pthread_rwlockattr_t *restrict attr, int *restrict pshared);
+int pthread_rwlockattr_setpshared(pthread_rwlockattr_t *attr,int pshared);
+// 四个函数返回值：若成功，返回0，若出错，返回错误编号
+```
+
+***
+
+条件变量属性
 
 
-<u>读写锁属性</u>
 
+***
 
-
-<u>条件变量属性</u>
-
-
-
-<u>屏障属性</u>
+屏障属性
