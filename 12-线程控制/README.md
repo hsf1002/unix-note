@@ -165,3 +165,38 @@ int pthread_barrierattr_getshared(const pthread_barrierattr_t* restrict attr,int
 // 四个函数返回值：若成功，返回0，若出错，返回错误编号
 ```
 
+##### 重入
+
+如果一个函数在相同的时间点可以被多个线程安全的调用，该函数式线程安全的；如果一个函数对多个线程是可重入的，这个函数就是线程安全的；如果函数对异步信号处理程序的重入是安全的，该函数式异步信号安全的；下表列出的是POSIX.1不能保证线程安全的函数
+
+```
+asctime	ecvt	gethostent	getutxline	putc_unlocked
+basename	encrypt	getlogin	gmtime	putchar_unlocked
+catgets	endgrent	getnetbyaddr	hcreate	putenv
+crypt	endpwent	getnetbyname	hdestroy	pututxline
+ctime	endutxent	getopt	hsearch	rand
+dbm_clearerr	fcvt	getprotobyname	inet_ntoa	readdir
+dbm_close	ftw	getprotobynumber	L64a	setenv
+dbm_delete	getcvt	getprotobynumber	lgamma	setgrent
+dbm_error	getc_unlocked	getprotoent	lgammaf	setkey
+dbm_fetch	getchar_unlocked	getpwent	lgammal	setpwent
+dbm_firstkey	getdate	getpwnam	localeconv	setutxent
+dbm_nextkey	getenv	getpwuid	lrand48	strerror
+dbm_open	getgrent	getservbyname	mrand48	strtok
+dbm_store	getgrgid	getservbyport	nftw	ttyname
+dirname	getgrnam	getservent	nl_langinfo	unsetenv
+dlerror	gethostbyaddr	getutxent	ptsname	wcstombs
+drand48	gethostbyname	getutxid	ptsname	ectomb
+```
+
+以线程安全的方式管理FILE对象的方法：
+
+```
+#include <stdio.h>
+
+int ftrylockfile(FILE *filehandle);
+// 若成功，返回0，若不能获取锁，返回非0
+void flockfile(FILE *filehandle);
+void funlockfile(FILE *filehandle);
+```
+
