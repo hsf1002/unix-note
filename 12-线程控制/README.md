@@ -67,3 +67,60 @@ int pthread_attr_getstacksize(pthread_attr_t *attr, size_t *stacksize);
 // 设置stacksize时，不能小于PTHREAD_STACK_MIN
 ```
 
+##### 同步属性
+
+<u>互斥量属性</u>
+
+```
+int pthread_mutexattr_init(pthread_mutexattr_t *attr);  
+int pthread_mutexattr_destroy(pthread_mutexattr_t *attr); 
+// 两个函数返回值：若成功，返回0，若出错，返回错误编号
+```
+
+主要有三个属性
+
+* 进程共享属性：标准可选的，运行时通过_SC_THREAD_PROCESS_SHARED查看，如果设置为PTHREAD_PROCESS_SHAERD，从多个进程彼此之间共享的内存数据块中分配的互斥量就能用于这些进程的同步；设置为PTHREAD_PROCESS_PRIVATE时，允许线程库提供更有效的互斥量实现，这是默认的情况
+
+  ```
+  int pthread_mutexattr_getpshared(const pthread_mutexattr_t *restrict attr, int *restrict pshared); 
+  int pthread_mutexattr_setpshared(pthread_mutexattr_t *attr,int pshared); 
+  // 两个函数返回值：若成功，返回0，若出错，返回错误编号
+  ```
+
+* 健壮属性：与在多个进程间共享的互斥量有关，默认值是PTHREAD_MUTEX_STALLED，意味着互斥量在进程终止时不需要采取任何动作，此时使用互斥量的行为未定义，等待该互斥量的程序会被“拖住”；另一个取值PTHREAD_MUTEX_ROBUST，改变了调用pthread_mutex_lock的方式，因为必须检查3个返回值而不是之前的两个：不需要恢复的成功、需要恢复的成功、失败（如果不用健壮属性，只能检查成功或失败）
+
+  ```
+  int pthread_mutexattr_getrobust(const pthread mutexattr_t *restrict attr, int *restrict robust);
+  int pthread_mutexattr_setrobust(pthread mutexattr_t *restrict attr, int robust);
+  // 两个函数返回值：若成功，返回0，若出错，返回错误编号
+  ```
+
+* 类型属性：控制着互斥量的锁定特性
+
+  ```
+  互斥量类型					用途			没有解锁时再次加锁	不占用时解锁	在已解锁时解锁
+  PTHREAD_MUTEX_NORMAL	标准类型，不做任何检查	     死锁	      未定义	    未定义
+  PTHREAD_MUTEX_ERRORCHECK进程错误检查	            返回错误	返回错误	 返回错误
+  PTHREAD_MUTEX_RECURSIVE	避免死锁	             允许	       返回错误	    返回错误
+  PTHREAD_MUTEX_DEFFAULT	请求默认语义	            未定义	     未定义	   未定义
+  ```
+
+  ```
+  int pthread_mutexattr_gettype(const pthread_mutexattr_t *restrict attr,int *restrict type); 
+  int pthread_mutexattr_settype(pthread_mutexattr_t *attr, int type);
+  // 两个函数返回值：若成功，返回0，若出错，返回错误编号
+  ```
+
+  如果属性是PTHREAD_MUTEX_RECURSIVE，可以进行多次加锁，但是解锁次数和加锁次数不一致，将无法解锁
+
+
+
+<u>读写锁属性</u>
+
+
+
+<u>条件变量属性</u>
+
+
+
+<u>屏障属性</u>
