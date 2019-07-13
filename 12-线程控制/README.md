@@ -200,3 +200,38 @@ void flockfile(FILE *filehandle);
 void funlockfile(FILE *filehandle);
 ```
 
+##### 线程特定数据
+
+线程私有数据，除了寄存器外，一个线程没办法阻止另一个线程访问它的数据，管理线程特定数据可以提高线程间的数据独立性
+
+```
+int pthread_key_create(pthread_key_t *keyp, void (* _Nullable)(void *));
+int pthread_key_delete(pthread_key_t keyp);
+// 两个函数返回值：若成功，返回0，若出错，返回错误编号
+```
+
+* keyp可以被进程中所有线程使用，但是每个线程把这个键与不同的线程特定数据地址进行关联
+
+* pthread_key_create可以为该键关联一个可选的析构函数，当线程调用pthread_exit或执行返回正常退出时，析构函数就会调用，线程取消时，只有在最后的清理处理程序返回之后，析构函数才会被调用，如果线程调用了exit、_exit、_Exit或abort，或其他非正常退出时，不会调用西沟函数
+
+* pthread_key_delete用来取消键与线程特定数据之间的关联，调用它并不会激活该键关联的析构函数
+
+* 需要确保分配的键不会由于初始化阶段的竞争而发生变动，这样会导致有些线程看到的是一个键值，其他线程看到的是不同的键值，解决竞争的办法是使用pthread_once
+
+  ```
+  pthread_once_t initflag = PTHREAD_ONCE_INIT;
+  int pthread_once(pthread_once_t *initflag, void (* _Nonnull)(void));
+  // 若成功，返回0，若出错，返回错误编号
+  // initflag必须是非本地变量(即全局或静态变量)，且必须用PTHREAD_ONCE_INIT初始化
+  ```
+
+* 键一旦创建，就可以通过pthread_setspecific把键和线程特定数据关联起来
+
+  ```
+  void* _Nullable pthread_getspecific(pthread_key_t key);
+  // 返回线程特定数据，若没有值与该键关联，返回NULL
+  int pthread_setspecific(pthread_key_t key, const void * _Nullable value);
+  // 若成功，返回0，若出错，返回错误编号
+  ```
+
+  
