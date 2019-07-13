@@ -330,3 +330,27 @@ int pthread_atfork(void (*prepare)(void), void (*parent)(void),void (*child)(voi
 * parent：在fork创建子进程后，返回之前在父进程的上下文中调用，任务是对prepare获取的所有锁进行解锁
 * child：在fork返回之前，在子进程上下文中调用，任务是释放prepare获取的所有锁
 
+##### 线程与IO
+
+以下两个操作，将导致两个线程读取到同一内容
+
+```
+// thread A
+lseek(fd, 300, SEEK_SET);
+read(fd, buf1, 100);
+
+// thread B
+lseek(fd, 700, SEEK_SET);
+read(fd, buf2, 100);
+```
+
+为了解决此问题， 可以使用pread，使得偏移量的设定和读取成为一个原子操作
+
+```
+// thread A
+pread(fd, buf1, 100, 300);
+
+// thread B
+pread(fd, buf2, 100, 700);
+```
+
