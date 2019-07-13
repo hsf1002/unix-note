@@ -234,4 +234,55 @@ int pthread_key_delete(pthread_key_t keyp);
   // 若成功，返回0，若出错，返回错误编号
   ```
 
-  
+##### 取消选项
+
+有两个属性没有包含在pthread_attr_t中，可取消状态和可取消类型，它们影响着线程在响应pthread_cancel调用时的行为
+
+```
+int pthread_setcancelstate(int state, int * oldstate);
+// 若成功，返回0，若出错，返回错误编号
+#define PTHREAD_CANCEL_ENABLE        0x01  // 下个取消点生效
+#define PTHREAD_CANCEL_DISABLE       0x00  // 取消推迟
+```
+
+调用pthread_cancel并不等待线程终止，默认情况下，线程在取消请求发出后还是继续运行，直到线程达到某个取消点，POSIX定义了取消点和可选取消点的函数
+
+```
+// 一定会执行取消点的函数
+accept	mq_timedsend	putpmsg	sigsuspend
+aio_suspend	msgrcv	pwrite	sigtimedwait
+clock_nanosleep	msgsnd	read	sigwait
+close	msync	readv	sigwaitinfo
+connect	nanosleep	recv	sleep
+creat	open	recvfrom	system
+fcnt12	pause	recvmsg	tcdrain
+fsync	poll	select	usleep
+getmsg	pread	sem_timedwait	wait
+getpmsg	pthread_cond_timedwait	sem_wait	waitid
+lockf	pthread_cond_wait	send	waitpid
+mq_receive	pthread_join	sendmsg	write
+mq_send	pthread_testcancel	sendto	writev
+mq_timedreceive	putmsg	sigpause	
+```
+
+线程启动时默认的可取消状态是PTHREAD_CANCEL_ENABLE，设置为PTHREAD_CANCEL_DISABLE时，调用pthread_cancel并不会杀死线程，相反，取消请求对这个线程来说还处于挂起状态，当取消状态再次变成PTHREAD_CANCEL_ENABLE时，线程将在下个取消点对所有挂起的取消请求进行处理
+
+可以使用pthread_testcancel添加自己的取消点
+
+```
+void pthread_testcancel(void);
+```
+
+取消类型也就是推迟取消，调用pthread_cancel后，在线程到达取消点之前，并不会出现真正的取消，可以调用pthread_setcanceltype来修改取消类型
+
+```
+int pthread_setcanceltype(int type, int *oldtype);
+// 若成功，返回0，若出错，返回错误编号
+```
+
+
+
+
+
+
+
