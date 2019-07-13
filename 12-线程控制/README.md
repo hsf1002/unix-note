@@ -280,9 +280,40 @@ int pthread_setcanceltype(int type, int *oldtype);
 // 若成功，返回0，若出错，返回错误编号
 ```
 
+##### 线程与信号
 
+把线程引入编程范型，使得信号的处理变得更加复杂。单个线程可以阻止某些信号，当当某个线程修改了与某个给定信号相关的处理行为后，所有的线程都必须共享这个处理行为的改变。如一个线程忽略某个信号，则另一个线程就可以通过两种方式撤销上述线程的信号选择：恢复信号的默认处理行为，或为信号设置一个新的信号处理程序。如果一个信号与硬件故障有关，则该信号一般会发生到引起该事件的线程，其他信号则被发送到任意一个线程。进程中使用sigprocmask阻止信号发送，线程中则使用pthread_sigmask
 
+```
+int pthread_sigmask(int how, const sigset_t *restrict set, sigset_t *restrict oset);
+// 若成功，返回0，若出错，返回错误编号
+```
 
+* 工作方式与sigprocmask基本相同，how的取值
+  * SIG_BLOCK：把信号集添加到线程信号屏蔽字中
+  * SIG_SETMASK：用信号集替换线程的信号屏蔽字
+  * SIG_UNBLOCK：从线程信号屏蔽字中移除信号集
 
+* 如果oset不为空，则获取线程的信号屏蔽字并保存到oset
+* 如果set不为空，则设置线程的信号屏蔽字为set，如果set为空，oset不为空，则how被忽略
 
+可以通过调用sigwait等待一个或多个信号的出现
+
+```
+int sigwait(const sigset_t *set, int *signop);
+// 若成功，返回0，若出错，返回错误编号
+```
+
+* set指定了等待的信号集
+* signop指向的整数将包含发送信号的数量
+* 如果信号集中某个信号在调用sigwait时处于挂起状态，那么sigwait无阻塞的返回，返回之前，从进程中移除那些处于挂起的信号；为了避免错误行为发生，线程在调用sigwait前，必须阻塞那些它正在等待的信号；sigwait会原子的取消信号集的阻塞状态，直到新的信号被递送，返回之前，sigwait将恢复线程的信号屏蔽字
+
+发送信号给进程，可以调用kill，发送信号给线程，可以调用pthread_kill
+
+```
+int pthread_kill(pthread_t thread, int signo);
+// 若成功，返回0，若出错，返回错误编号
+```
+
+可以传0给signo检查线程是否存在，如果信号的默认处理动作是终止该进程，那么把信号传递给某个线程仍然会杀死整个进程
 
