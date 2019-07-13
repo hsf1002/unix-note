@@ -317,3 +317,16 @@ int pthread_kill(pthread_t thread, int signo);
 
 可以传0给signo检查线程是否存在，如果信号的默认处理动作是终止该进程，那么把信号传递给某个线程仍然会杀死整个进程
 
+##### 线程与fork
+
+在多线程的进程中，在fork返回和子进程调用exec之间，子进程只能调用异步信号安全的函数。fork后，子进程继承了整个地址空间的副本，包括每个互斥量、读写锁和条件变量，如果父进程包含多个线程，子进程在fork返回后，如果不马上调用exec的话，需要清理锁状态。可以通过pthread_atfork建立fork处理程序，最多可以安装三个帮助清理锁状态的函数
+
+```
+int pthread_atfork(void (*prepare)(void), void (*parent)(void),void (*child)(void));
+// 若成功，返回0，若出错，返回错误编号
+```
+
+* prepare：在fork创建子进程前调用，任务是获取父进程定义的所有锁
+* parent：在fork创建子进程后，返回之前在父进程的上下文中调用，任务是对prepare获取的所有锁进行解锁
+* child：在fork返回之前，在子进程上下文中调用，任务是释放prepare获取的所有锁
+
