@@ -1,0 +1,17 @@
+### 第十三章  守护进程
+
+##### 守护进程的特征
+
+BSD系统下ps -axj或System V系统下ps -efj查看系统进程的状态，Mac下显示如
+
+```
+UID   PID  PPID   C STIME   TTY           TIME CMD              USER              PGID   SESS JOBC STAT   TT 
+    0     1     0   0 25 419  ??        31:13.67 /sbin/launchd    root                 1      0    0 Ss     ?? 
+    0    46     1   0 25 419  ??         0:30.77 /usr/sbin/syslog root                46      0    0 Ss     ?? 
+```
+
+* 标题分别表示：用户ID、进程ID、父进程ID、C、STIME、终端名称、运行时长、命令字符串、用户名称、进程组ID
+
+* 父进程为0的进程通常是内核进程，它们通常存在于系统的整个生命期内，以超级用户特权运行，无控制终端，无命令行
+* 内核守护进程的名字出现在方括号内，进程1在linux下是init，在Mac下是lunchchd。linux下还有kswapd守护进程为内存换页守护进程，flush守护进程在可用内存达到最小阈值时将脏数据冲洗到磁盘，sync_seupers守护进程定期将文件系统元数据冲洗到磁盘，jbd守护进程帮助实现ext4文件系统中的日志功能，rpcbind守护进程提供将远程调用程序号映射为网络端口号，rsyslogd守护进程有管理员启动将系统消息记入日志，inetd守护进程可以侦听网络接口，cron守护进程在定期安排的时间执行命令
+
