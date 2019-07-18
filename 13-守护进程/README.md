@@ -24,3 +24,27 @@ UID   PID  PPID   C STIME   TTY           TIME CMD              USER            
 5. 关闭不需要的文件描述符
 6. 某些守护进程需要打开/dev/null使其具有文件描述符0、1、2，因为守护进程不与终端设备关联，所以标准输入输出或标准错误都不会产生效果，既不能接收到用户输入，其输出也不会显示
 
+##### 出错记录
+
+BSD的syslog是一个集中的守护进程出错记录的设施，有三种方式可以产生日志：
+
+* 内核例程调用log函数，打开并读取/dev/klog
+* 大多数用户进程（守护进程）调用syslog(3)产生日志，日志被保存到/dev/log
+* 不管在本机，还是通过TCP/IP网络连接到此本机的其他主机，都可将日志发向UDP端口514
+
+syslogd守护进程读取所有三种格式的日志，此守护进程启动时读取一个配置文件/etc/syslog.conf，决定了不同种类的消息应送到何处，如紧急消息可发送到系统管理员，并在控制台打印，而警告消息可记录到文件
+
+```
+#include <syslog.h>
+
+void openlog(const char *ident, int option, int facility);
+void syslog(int priority, const char *format);
+void closelog(void);
+int setlogmask(int maskpri);
+// 返回值：前日志记录优先级屏蔽字值
+```
+
+* openlog可选，如果不调用，在第一次调用syslog时自动调用openlog，closelog也是可选
+* ident一般是程序的名称，option指定各种选项的位屏蔽
+* setlogmask用于设置进程的记录优先级屏蔽字
+
