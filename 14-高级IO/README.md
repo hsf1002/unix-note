@@ -49,3 +49,70 @@ struct flock
 2. 由fork产生的子进程不继承父进程设置的锁
 3. 在执行exec后，新程序可以继承原执行程序的锁，除非该文件未设置执行关闭标志
 
+##### IO多路转换
+
+从一个描述符读，又写到另一个描述符，可以使用阻塞IO：
+
+```
+while ((n = read(STDIN_FILENO, buf, BUFSIZ)) > 0)
+    if (write(STDOUT_FILENO, buf, n) != 0)
+        perror("write error");
+```
+
+如果要从两个描述符读，就不能在任一描述符上阻塞读，否则导致另一个描述符即使有数据也无法处理。
+
+观察telnet命令：从终端标准输入读，将数据写到网络连接上，同时从网络连接读，将数据写到终端标准输出；而在网络连接的另一端，telnetd守护进程读取用户输入的命令，送给shell处理，再将输出传给用户。
+
+* 一个方法是将一个进程变成两个进程（fork），每个进程处理一条数据通路，但是无法确定操作什么时候终止
+
+* 一个方法是使用一个进程的两个线程，虽然避免了终止的复杂性，但要处理线程同步
+* 一个方法是仍旧使用一个进程执行该程序，但使用非阻塞IO读取数据，即所谓轮询，但是浪费CPU
+* 一个方法是异步IO，但存在可移植性问题
+* 比较好的处理方法是使用IO多路转换：先构造一张描述符的列表，调用一个函数，直到这些描述符中的一个已经准备好IO时，该函数才返回，poll、pselect和select这三个函数可以执行IO多路转换
+
+```
+#include <sys/select.h>
+
+int select(int maxfdp1, fd_set *restrict readfds, fd_set *restrict writefds,
+            fd_set *restrict exceptfds, struct timeval *restrict tvptr);
+// 返回值：准备就绪的描述符数目，若超时，返回0，若出错，返回-1
+```
+
+最后一个参数表示愿意等待的时间长度
+
+* tvptr==NULL：永远等待，当捕捉到指定描述符中的一个已准备好或捕捉到一个信号则返回
+* tvptr.tv_sec==0 && tvptr.tv_usec==0：不等待，立刻返回
+* tvptr.tv_sec!=0 || tvptr.tv_usec!=0：等待的秒数和微秒数，时间未到，可像第一种条件被打断
+
+中间三个参数是指向可读、可写、处于异常条件的描述符集的指针，都可以是空指针，表示不关心此条件，若三个都是空指针，则select提供了比sleep更精确的定时器
+
+```
+void FD_ZERO(fd_set *fdset);          // 清空集合
+void FD_SET(int fd, fd_set *fdset);   // 将一个给定的文件描述符加入集合之中
+void FD_CLR(int fd, fd_set *fdset);   // 将一个给定的文件描述符从集合中删除
+int FD_ISSET(int fd, fd_set *fdset);  // 若fd在描述符集中，返回非0，否则，返回0
+```
+
+第一个参数maxfdp1是最大文件描述符的值加1，也可设置为FD_SETSIZE，这值太大了，大多数程序只使用3-10个描述符
+
+对于描述符“准备就绪”的含义：
+
+* 对读集中的一个描述符进行read不会阻塞，认为此描述符是准备就绪的
+* 对写集中的一个描述符进行write不会阻塞，认为此描述符是准备就绪的
+* 对异常条件集中的一个描述符有一个未决异常条件，认为此描述符是准备就绪的
+* 对读、写、异常条件，普通文件的文件描述符总是返回准备就绪
+
+一个描述符阻塞并不影响select是否阻塞
+
+```
+#include <sys/select.h>
+
+int pselect(int maxfdp1, fd_set *restrict readfds, fd_set *restrict writefds,
+fd_set *restrict exceptfds, const struct timespec *restrict tsptr
+const sigset_t *restrict sigmask);
+// 返回值：准备就绪的描述符数目；若超时，则返回0；若出错，返回-1
+```
+
+* 超时值使用timespec结构，以秒和纳秒表示超时值，能够提供更精确的超时时间，超时值被声明为const，这保证了超时值不会在调用时被修改
+* 使用可选的信号屏蔽字，如果参数sigmask非空，则在函数被调用时，以原子的方式安装该屏蔽字，再返回时，恢复以前的屏蔽字
+
