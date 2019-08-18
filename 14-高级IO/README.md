@@ -116,3 +116,48 @@ const sigset_t *restrict sigmask);
 * 超时值使用timespec结构，以秒和纳秒表示超时值，能够提供更精确的超时时间，超时值被声明为const，这保证了超时值不会在调用时被修改
 * 使用可选的信号屏蔽字，如果参数sigmask非空，则在函数被调用时，以原子的方式安装该屏蔽字，再返回时，恢复以前的屏蔽字
 
+与select不同，poll构造一个pollfd的数组，每个数组元素指定一个描述符编号以及我们对该描述符感兴趣的条件
+
+```
+#include <poll.h>
+
+int poll(struct pollfd *fds, nfds_t nfds, int timeout);
+// 返回值：准备就绪的描述符数目，若超时，返回0，若出错，返回-1
+
+// pollfd结构
+struct pollfd
+{
+    int fd;          /* file descriptor */
+    short events;    /* requested events*/
+    short revents;   /* returned events*/
+};
+```
+
+最后一个参数表示愿意等待的时间长度
+
+* timeout==-1：永远等待，当指定的一个描述符准备就绪或捕捉到一个信号则返回
+* timeout==0：不等待，立刻返回
+* timeout>0：等待的毫秒数
+
+中间参数nfds表示数组fds的长度
+
+第一个参数的events和revents
+
+```
+POLLIN 　　　　　　　有数据可读
+POLLRDNORM 　　　　 有普通数据可读
+POLLRDBAND　　　　　有优先数据可读
+POLLPRI　　　　　　　有紧迫数据可读
+POLLOUT　　　　　　 写数据不会导致阻塞
+POLLWRNORM　　　　　写普通数据不会导致阻塞
+POLLWRBAND　　　　　写优先数据不会导致阻塞
+POLLMSGSIGPOLL 　　消息可用
+
+revents还可以是：
+POLLER　　  指定的文件描述符发生错误
+POLLHUP　　 指定的文件描述符挂起事件
+POLLNVAL　　指定的文件描述符非法
+```
+
+与select一样，一个描述符是否阻塞不会影响poll是否阻塞
+
