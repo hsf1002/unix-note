@@ -161,3 +161,42 @@ POLLNVAL　　指定的文件描述符非法
 
 与select一样，一个描述符是否阻塞不会影响poll是否阻塞
 
+##### 异步IO
+
+POSIX异步IO接口为不同类型的文件进行异步IO提供了一套一致的方法，这些接口使用AIO控制块来描述IO操作
+
+```
+#include <aiocb.h>
+
+struct aiocb {
+  /* 下面所有字段依赖于具体实现 */
+  int             aio_fildes;     /* 文件描述符 */
+  off_t           aio_offset;     /* 文件偏移 */
+  volatile void  *aio_buf;        /* 缓冲区地址 */
+  size_t          aio_nbytes;     /* 传输的数据长度 */
+  int             aio_reqprio;    /* 请求优先级 */
+  struct sigevent aio_sigevent;   /* 通知方法 */
+  int             aio_lio_opcode; /* 仅被 lio_listio() 函数使用 */
+
+  /* Various implementation-internal fields not shown */
+};
+```
+
+不能在同一个进程中把异步IO函数和传统IO函数混在一起操作同一个文件
+
+```
+struct sigevent {
+    int           sigev_notify;            /* 通知类型 */
+    int           sigev_signo;             /* 信号编号 */ 
+    union sigval  sigev_value;             /* 信号数值 */ 
+    void         (*sigev_notify_function)(union sigval); /* 通知函数 */ 
+    pthread_attr_t *sigev_notify_attributes;  /* 通知属性 */ 
+}; 
+```
+
+sigev_notify字段控制通知类型，可能是以下三者之一：
+
+* SIGEV_NONE：异步IO请求完成后，不通知进程
+* SIGEV_SIGNAL：异步IO请求完成后，产生由sigev_signo字段指定的信号
+* SIGEV_THREAD：异步IO请求完成后，由sigev_notify_function字段指定的函数被调用
+
