@@ -200,3 +200,62 @@ sigev_notify字段控制通知类型，可能是以下三者之一：
 * SIGEV_SIGNAL：异步IO请求完成后，产生由sigev_signo字段指定的信号
 * SIGEV_THREAD：异步IO请求完成后，由sigev_notify_function字段指定的函数被调用
 
+```
+#include <aio.h>
+
+int aio_read(struct aiocb *aiocbp);			// 进行异步读
+int aio_write(struct aiocb *aiocbp);		// 进行异步写
+int aio_fsync(int op, struct aiocb *aiocb); // op==O_DSYNC，如同fdatasync，op==SYNC，如fsync
+// 三个函数返回值，若成功，返回0，若出错，返回-1
+```
+
+为了获知一个异步读、写、或者同步操作的完成状态，需要调用aio_error
+
+```
+int aio_error(const struct aiocb *aiocb);
+返回值：
+0：异步操作成功完成，需要调用aio_return获取返回值
+-1：对aio_error调用失败，此时errno返回错误码
+EINPROGRESS：异步读、写或同步操作仍在等待
+其他：相应的错误码
+
+ssize_t aio_return(const struct aiocb *aiocb);
+返回值：
+-1：本身调用失败，设置errno
+其他：返回read、write或fsync在被成功调用时可能返回的结果
+必须在异步操作完成之后调用，否则其值未定义，每个异步操作只能调用一次aio_return，一旦调用了，操作系统就可以释放包含了IO操作返回值的记录
+```
+
+如果还有其他事务要处理不想被IO操作阻塞，可以使用异步IO，然而如果完成了所有事务，还有异步操作未完成，可以调用aio_suspend阻塞进程，直到操作完成
+
+```
+int aio_suspend(const struct aiocb *const list[], int nent, const struct timespec *timeout);
+// 若成功，返回0，若出错，返回-1
+nent表示list的长度
+```
+
+如果不想再完成的等待中的异步IO操作时，可以尝试使用aio_cancel取消它们
+
+```
+int aio_cancel(int fd, struct aiocb *aiocb);
+返回值：
+-1：本身调用失败，设置errno
+AIO_ALLDONE：所有操作在尝试取消前已完成
+AIO_CANCELED：所有要求的操作都已取消
+AIO_NOTCANCELED：至少一个要求的操作没有取消
+
+fd指定了那个未完成的异步IO操作的文件操作符，如果aiocb为NULL，系统将会尝试取消所有该文件上未完成的异步IO操作，其他情况下，只尝试取消aiocb描述的单个异步IO操作
+```
+
+lio_listio提交一系列由一个AIO控制块列表描述的IO操作
+
+```
+int lio_listio(int mode, struct aiocb *restrict const list[restrict], int nent, struct sigevent *restrict sigev);
+// 若成功，返回0，若出错，返回-1
+
+mode：LIO_WAIT表示该函数在所有有列表指定的IO操作完成后返回，此时sigev被忽略；LIO_NOWAIT表示该函数在IO请求入队后立刻返回，进程将在所有IO操作完成后，按照sigev指定的被异步的通知，如果不想被通知，sigev设置为NULL
+list：指向AIO控制块列表
+nent：列表长度
+每个控制块中，aio_lio_opcode字段指定了该操作时一个读操作、写操作还是被忽略的空操作
+```
+
