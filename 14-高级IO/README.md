@@ -278,5 +278,15 @@ struct iovec {
 
 iovcnt表示iov的数组长度，受限于IOV_MAX；writev从缓冲区聚集数据的顺序是iov[0], iov[1],直到iov[iovcnt-1]，writev返回值，通常是所有缓冲区的长度之和；readv将读入的数据按上述顺序散布到缓冲区中
 
+##### 函数readn和writen
+
+读写指定的n字节数据，并处理返回值小于要求值得情况，只是按需多次调用read和write直到读写了n个字节数据
+
+```
+ssize_t readn(int fd, void *buf, size_t nbytes);
+ssize_t writenint fd, void *buf, size_t nbytes);
+// 两个函数的返回值：读写的字节数，若出错，返回-1
+```
+
 
 
