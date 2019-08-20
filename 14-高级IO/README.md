@@ -259,3 +259,24 @@ nent：列表长度
 每个控制块中，aio_lio_opcode字段指定了该操作时一个读操作、写操作还是被忽略的空操作
 ```
 
+##### 函数readv和writev
+
+用于在一次函数调用中读写多个非连续缓冲区，称为散布读和聚集写
+
+```
+#include <sys/uio.h>
+
+ssize_t readv(int fd, const struct iovec *iov, int iovcnt);
+ssize_t writev(int fd, const struct iovec *iov, int iovcnt);
+// 两个函数的返回值：若成功则返回已读、写的字节数，若出错则返回-1
+
+struct iovec {
+    void      *iov_base;      /* starting address of buffer */
+    size_t    iov_len;        /* size of buffer */
+};
+```
+
+iovcnt表示iov的数组长度，受限于IOV_MAX；writev从缓冲区聚集数据的顺序是iov[0], iov[1],直到iov[iovcnt-1]，writev返回值，通常是所有缓冲区的长度之和；readv将读入的数据按上述顺序散布到缓冲区中
+
+
+
