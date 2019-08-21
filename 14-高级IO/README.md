@@ -288,5 +288,64 @@ ssize_t writenint fd, void *buf, size_t nbytes);
 // 两个函数的返回值：读写的字节数，若出错，返回-1
 ```
 
+##### 存储映射IO
 
+能将一个磁盘文件映射到存储空间的一个缓冲区上，于是当从缓冲区读取数据时，相当于读取文件；类似的将数据存入缓冲区时，相应数据就会写入文件，这样可以在不使用read和write的情况下执行IO
+
+首先将文件映射到存储区
+
+```
+#include <sys/mman.h>
+
+void *mmap(void *addr, size_t len, int prot, int flag, int fd, off_t off);
+// 若成功，返回映射区的起始地址，若出错，返回MAP_FAILED
+```
+
+addr：映射区的起始地址，通常为0，表示由系统选择，也即函数返回值
+
+fd：被映射的文件描述符，在文件映射到地址空间之前，必须先打开
+
+len：映射的字节数
+
+off：文件描述符的偏移量
+
+prot：映射区的保护要求，可按位或，不可超过文件open模式的访问权限，如文件只读打开，不能设置为PROD_WRITE
+
+* PROD_READ：可读
+* PROD_WRITE：可写
+* PROD_EXEC：可执行
+* PROD_NONE：不可访问
+
+flag：
+
+* MAP_FIXED：返回值必须等于addr，不利于移植，不鼓励使用此标志，addr指定为0可获最大可移植性
+* MAP_SHARED：指定存储操作修改映射文件，必须指定此标志或下一个标志，但不能同时指定两者
+* MAP_PRIVATE：对映射区的存储操作导致创建该映射文件的一个私有副本，任何修改只影响副本，而不影响源文件
+
+更改一个现有映射的权限
+
+```
+int mprotect(void *addr, size_t len, int prot);
+// 若成功，返回0，若出错，返回-1
+```
+
+将修改的页冲洗到映射文件中，类似于fsync，但作用于存储映射区
+
+```
+int msync(void *addr, size_t len, int flag);
+// 若成功，返回0，若出错，返回-1
+```
+
+flag：一定要指定下面前两个之一
+
+* MS_ASYNC：调试
+* MS_SYNC：返回之前等待写操作完成
+* MS_INVALIDATE：可选标志，运行通知操作系统丢弃那些与底层存储器没有同步的页
+
+当进程终止时，会自动解除存储映射区的映射，或直接调用munmap来解除
+
+```
+int munmap(void *addr, size_t len);
+// 若成功，返回0，若出错，返回-1
+```
 
