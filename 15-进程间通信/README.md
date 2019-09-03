@@ -44,3 +44,20 @@ fd[0]为读打开，fd[1]为写打开，fd[1]的输出是fd[0]的输入
 
 常量PIPE_BUF规定了内核的管道缓冲区大小，可以用pathconf或fpathconf确定
 
+##### 函数popen和pclose
+
+常见的操作时创建一个文件连接到另一个进程的管道，然后读其输出或向其输入端发送数据，popen和pclose实现的操作是：创建一个管道，fork一个子进程，关闭未使用的管道端，执行一个shell运行命令，然后等待命令终止
+
+```
+#include <stdio.h>
+
+FILE *popen (const char *cmdstring , const char * type);
+// 若成功，返回文件指针，若出错，返回NULL
+int pclose (FILE *fp);
+// 若成功，返回cmdstring的终止状态，若出错，返回-1
+```
+
+* popen先执行fork，然后调用exec执行cmdstring，并且返回一个标准IO文件指针，如果type是r，则文件指针连接到cmdstring的标准输出，如果type是r，则文件指针连接到cmdstring的标准输入
+
+* pclose关闭标准IO流，等待命令终止，然后返回shell的终止状态
+
