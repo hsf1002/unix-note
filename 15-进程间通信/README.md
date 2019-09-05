@@ -65,3 +65,30 @@ int pclose (FILE *fp);
 
 当一个过滤程序既产生某个过滤程序的输入，又读取过滤程序的输出时，就变成了协同进程，Korn shell提供了协同进程，而其他shell没有提供；通常在shell的后台运行，其标准输入和标准输出通过管道连接到另一个程序；popen只提供连接到另一个进程的标准输入或标准输出的单向管道，而协同进程则连接到另一个进程的两个单向管道：一个连接到其标准输入，另一个则来自其标准输出，我们将数据写到其标准输入，处理后，再从其标准输出读取数据
 
+##### FIFO
+
+有时候被称为命名管道，是因为未命名的管道只能在两个相关的进程之间使用，而且这两个进程要有一个共同的祖先进程，但是FIFO，不相关的进程也能交换数据；FIFO是一种文件类型，通过stat结构的st_mode成员编码可以直达是否FIFO类型，可以用S_ISFIFO进行测试
+
+```
+#include <sys/stat.h>
+
+int mkfifo(const char *path, mode_t mode);
+int mkfifoat(int fd, const char *path, mode_t mode);
+// 两个函数返回值：若成功，返回0，若出错，返回-1
+```
+
+mode参数与open中的mode相同，FIFO有两种用途：
+
+1. shell命令使用FIFO将数据从一条管道传送到另一条时，无需创建临时文件
+2. 客户进程-服务器进程应用程序中，FIFO用作汇聚点，在两者之间传递数据
+
+* 用FIFO复制数据流：管道只能用于两个进程之间的线性连接，而FIFO可用于非线性连接，如果需要对一个经过过滤的输入流进行两次处理，可以使用FIFO和tee实现而无需临时文件：创建FIFO，后台启动prog3，从FIFO读取数据，然后启动prog1，用tee将其输出发送到FIFO和prog2
+
+```
+mkfifo fifo1
+prog3 < fifo1 &
+prog1 < infile | tee fifo1 | prog2
+```
+
+* 用FIFO进行客户进程和服务器进程通信
+
