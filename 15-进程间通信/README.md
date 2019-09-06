@@ -92,3 +92,37 @@ prog1 < infile | tee fifo1 | prog2
 
 * 用FIFO进行客户进程和服务器进程通信
 
+##### XSI IPC
+
+三种XSI IPC：信号量、消息队列和共享存储器，它们有很多相似之处；无论何时创建IPC结构（msgget、memget、shmget），都应该指定一个键，类型是key_t，有多重方法使得客户进程和服务器进程在同一IPC上汇聚：
+
+* 服务器进程指定IPC_PRIVATE创建一个新的IPC结构，缺点是文件系统操作需要服务器进程将返回值写到文件供客户进程读取
+* 在一个公共文件定义一个客户进程和服务器进程都认可的键，然后服务器进程根据此键创建新的IPC结构，缺点是需要判断该键是否已经使用
+* 客户进程和服务器进程认同的路径名和项目ID（0-255之间），接着调用ftok将这两个值变换为一个键，然后用第二种方法
+
+```
+#include <sys/ipc.h>
+
+key_t ftok(const char *path, int id);  // path必须引用现有的一个文件
+// 若成功，返回键，若出错，返回-1
+```
+
+IPC_PRIVATE总是创建一个新的IPC结构，同时指定IPC_CREATE和IPC_EXCL，如果IPC结构已经存在，则出错返回EEXIST；如果要引用一个IPC结构，key必须是创建时指明的key的值，并且不指定IPC_CREATE
+
+IPC的权限结构：
+
+```
+struct ipc_perm
+{
+key_t        key;                        调用shmget()时给出的关键字
+uid_t           uid;                      /*共享内存所有者的有效用户ID */
+gid_t          gid;                       /* 共享内存所有者所属组的有效组ID*/ 
+uid_t          cuid;                    /* 共享内存创建 者的有效用户ID*/
+gid_t         cgid;                   	/* 共享内存创建者所属组的有效组ID*/
+unsigned short   mode;    				/* Permissions + SHM_DEST和SHM_LOCKED标志*/
+unsignedshort    seq;          			/* 序列号*/
+};
+```
+
+可以调用msgctl、semctl或shmctl修改uid、gid和mode字段，但必须是IPC结构的创建者或超级用户；消息队列和共享存储器使用术语“读”或“写”，信号量使用术语“读”或“更改”；当最后一个引用管道的进程终止时，管道就被完全的删除了，对于FIFO而言，在最后一个引用FIFO的进程终止时，虽然FIFO的名字仍然保留在系统直到被显式的删除，但是留在FIFO中的数据已经被删除了；由于IPC不使用文件描述符，不能对它们使用多路转换
+
