@@ -217,3 +217,96 @@ type：返回哪一种消息，非0来取非先进先出的消息
     type<0：返回消息队列中消息类型值小于等于type绝对值的消息，如果由多个，取类型值最小的消息
 ```
 
+##### 信号量
+
+ 一个计数器，用于为多个进程提供对共享对象的访问，为了获取共享资源，进程执行如下操作：
+
+1. 测试控制该资源的信号量
+2. 若信号量为正，则进程使用该资源，信号量值减1
+3. 若信号量为0，则进程进入休眠状态，直至信号量值大于0，进程被唤醒，返回步骤1
+
+进程不再使用由信号量控制的共享资源时，信号量值增1，如果有进程正在休眠等待此信号量，唤醒它们
+
+这种形式的信号量为二元信号量，一般而言，初始值可以是任意正值，表示有多少个共享资源可供使用，信号量通常内核实现。XSI信号量要复杂得多，因为三个特性：
+
+1. 信号量并非是单个非负值，而是含有一个或多个信号量值得集合
+2. 信号量的创建独立于初始化，不能原子性的创建一个信号量集合并对其赋值
+3. 即使没有使用各种形式的XSI IPC，它们仍然是存在的，有的程序终止时没有释放已经分配的信号量
+
+```
+struct semid_ds 
+{
+    struct ipc_perm    sem_perm;        /* 对信号操作的许可权 */
+    __kernel_time_t    sem_otime;        /*对信号操作的最后时间 */
+    __kernel_time_t    sem_ctime;        /*对信号进行修改的最后时间 */
+    struct sem    *sem_base;        /*指向第一个信号 */
+    struct sem_queue *sem_pending;        /* 等待处理的挂起操作 */
+    struct sem_queue **sem_pending_last;    /* 最后一个正在挂起的操作 */
+    struct sem_undo    *undo;            /* 撤销的请求 */
+    unsigned short    sem_nsems;        /* 数组中的信号数 */
+};
+```
+
+获取一个信号量ID：
+
+```
+#include <sys/sem.h>
+
+int semget(key_t key, int nsems, int flag);
+// 若成功，返回信号量ID，若出错，返回-1
+
+创建一个新集合，必须指定nsems，引用现有集合，将nsems指定为0
+```
+
+包含了多种操作的semctl：
+
+```
+int semctl(int semid, int semnum, int cmd, .../* union semun arg */);
+// 返回值，见下
+
+arg是联合，而非联合的指针
+union semun
+{
+    int val;
+    struct semid_ds *buf;
+    unsigned short *array;
+}
+
+cmd的含义如下：
+IPC_STAT：对此集合取semid_ds结构，存储在arg.buf指向的结构
+IPC_SET：对信号量的属性进行设置
+IPC_RNID：删除semid指定的信号集
+GETPID：返回最后一个执行semop操作的进程ID
+GETVAL：返回信号集semnum指定信号的值
+GETALL：返回信号集中所用信号的值
+GETNCNT：返回正在等待资源的进程的数量
+GETZCNT：返回正在等待完全空闲资源的进程的数量
+SETVAL：设置信号集中semnum指定的信号的值
+SETALL：设置信号集中所用信号的值
+
+除了GETALL以外的所有GET命令，返回相应值，其他命令，若成功，返回0，若出错，返回-1
+```
+
+自动执行信号量集合上的操作数组：
+
+```
+int semop(int semid, struct sembuf semoparray[], size_t nops);
+// 若成功，返回0，若出错，返回-1
+
+具有原子性，或者执行数组中所有操作，或者一个也不做
+
+semoparray指向一个有sembuf结构表示的信号量操作数组
+struct sembuf
+{
+    unsigned short sem_num;
+    short sem_op;	/* operatioin(negative, 0, or positive */
+    short sem_flg;	/* IPC_NOWAIT, SEM_UNDO */
+}
+
+sem_op为正：表示进程释放的占用的资源数，sem_op的值会加到信号量值上，若指定了SEM_UNDO，则从信号量调整值减去sem_op
+sem_op为负：表示要获取由该信号量控制的资源，若信号量值大于等于sem_op绝对值，则从信号量值中减去sem_op绝对值，若指定了SEM_UNDO，则sem_op的绝对值加到信号量调整值上
+sem_op为0：表示调用进程希望等待到该信号量值变成0
+```
+
+无论何时只要为信号量操作指定SEM_UNDO标志，再分配资源（sem_op小于0），内核就会记住对于该特定信号量分配给了进程多少资源，进程终止时，内核会检测该进程是否还有尚未处理的信号量调整值，如果有按照调整值进行处理，如果用带SETVAL或SETALL命令的semctl设置一个信号量的值，则在所有进程中，该信号量的调整值被设置为0
+
