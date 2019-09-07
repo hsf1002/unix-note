@@ -126,3 +126,94 @@ unsignedshort    seq;          			/* 序列号*/
 
 可以调用msgctl、semctl或shmctl修改uid、gid和mode字段，但必须是IPC结构的创建者或超级用户；消息队列和共享存储器使用术语“读”或“写”，信号量使用术语“读”或“更改”；当最后一个引用管道的进程终止时，管道就被完全的删除了，对于FIFO而言，在最后一个引用FIFO的进程终止时，虽然FIFO的名字仍然保留在系统直到被显式的删除，但是留在FIFO中的数据已经被删除了；由于IPC不使用文件描述符，不能对它们使用多路转换
 
+##### 消息队列
+
+消息的链接表，存储在内核，由消息队列标识符标识，不一定以先进先出顺序取消息，可以按消息的类型字段读
+
+```
+struct msqid_ds 
+{
+    struct ipc_perm msg_perm;	/* see Section 15.6.2 */
+    struct msg *msg_first;      /* first message on queue,unused  */
+    struct msg *msg_last;       /* last message in queue,unused */
+    __kernel_time_t msg_stime;  /* last msgsnd time */
+    __kernel_time_t msg_rtime;  /* last msgrcv time */
+    __kernel_time_t msg_ctime;  /* last change time */
+    unsigned long  msg_lcbytes; /* Reuse junk fields for 32 bit */
+    unsigned long  msg_lqbytes; /* ditto */
+    unsigned short msg_cbytes;  /* current number of bytes on queue */
+    unsigned short msg_qnum;    /* number of messages in queue */
+    unsigned short msg_qbytes;  /* max number of bytes on queue */
+    __kernel_ipc_pid_t msg_lspid;   /* pid of last msgsnd */
+    __kernel_ipc_pid_t msg_lrpid;   /* last receive pid */
+};
+```
+
+创建新队列或打开现有队列：
+
+```
+#include <sys/msg.h>
+
+int msgget(key_t key, int flag);
+// 若成功，返回消息队列ID，若出错，返回-1
+
+flag代表的是权限
+用户读        0400
+用户写(更改)   0200
+组读          0040
+组写(更改)     0020
+其他读         0004
+其他写(更改)    0002
+
+如果创建新队列，需要初始化msqid_ds的以下成员：
+msg_perm：该结构中的mode成员按照flag的权限位设置
+msg_qnum、msg_lspid、msg_lrpid、msg_stime、msg_rtime为0
+msg_ctime：设置为当前时间
+msg_qbytes：设置为系统限制值
+```
+
+msgctl可以对队列执行多种操作：
+
+```
+int msgctl(int msqid, int cmd, struct msgid_ds *buf);
+// 若成功，返回0，若出错，返回-1
+
+cmd参数指定对msgid的队列要执行的命令，这三条命令也适用于信号量和共享存储
+IPC_STAT：取队列的msqid_ds结构，放在buf中
+IPC_SET：将字段msg_perm.uid、msg_perm.gid、msg_perm.mode和msg_qbytes从buf指向的结构复制到msqid
+IPC_RMID：删除消息队列及其数据，立刻生效
+```
+
+将消息添加到消息队列中：
+
+```
+int msgsnd(int msqid, const void *ptr, size_t nbytes, int flag);
+// 若成功，返回0，若出错，返回-1
+
+每个消息包含三部分：一个正的长整型字段、一个非负长度nbytes以及实际数据，总是放在队列尾端
+flag：可以指定为IPC_NOWAIT，类似于文件IO的非阻塞标志
+msgsnd若成功返回，消息队列相关的msqid_ds结构会随之更新
+
+ptr一般可定义为：
+struct mymesg
+{
+    long mtype;
+    char mtext[512];
+}
+```
+
+从队列中读取消息：
+
+```
+ssize_t msgrcv(int msqid, void *ptr, size_t nbytes, long type, int flag);
+// 若成功，返回消息数据部分的长度，若出错，返回-1
+
+和msgsnd一样，ptr指向一个长整型数，其后是实际消息数据的缓冲区
+nbytes：缓冲区的长度
+flag：若消息长度大于nbytes，且flag设置了MSG_NOERROR，消息会被截断，不设置此标志位，则出错返回E2BIG，也可以设置MSG_NOWAIT
+type：返回哪一种消息，非0来取非先进先出的消息
+    type==0：返回队列第一条消息
+    type>0：返回队列消息类型是type的第一条消息
+    type<0：返回消息队列中消息类型值小于等于type绝对值的消息，如果由多个，取类型值最小的消息
+```
+
