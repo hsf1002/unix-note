@@ -382,3 +382,97 @@ addr是shmat的返回值
 
 但是标识符依然存在，直到带IPC_RMID命令的shmctl删除它
 
+##### POSIX信号量
+
+意在解决XSI信号量的几个缺陷：
+
+* 考虑了更高性能的实现
+* 接口更简单，没有信号量集
+* 删除信号量时表现更完美
+
+未命名信号量：只存在于内存中，要求能使用信号量的进程必须可以访问内存
+
+命名信号量：通过名字访问，可用于不同进程的线程
+
+创建新的或引用现有信号量：
+
+```
+#include <semaphone.h>
+
+sem_t *sem_open(const char *name, int oflag, .../* mode_t mode, unsigned int value */);
+// 若成功，返回指向信号量的指针，若出错，返回SEM_FAILED
+
+如果引用：需要指定name和oflag为0，无需指定mode
+如果创建：当oflag指定为O_CREATE，需要提供两个额外参数，mode指定谁可以访问信号量，取值与打开文件权限位相同，value用来指定信号量初始值
+
+信号量命名规则：
+1. 第一个字符应该为斜杠/
+2. 不应包含其他斜杠以此避免实现定义的行为
+3. 最大长度是实现定义，不应超过_POSIX_NAME_MAX
+```
+
+释放信号量相关的资源：
+
+```
+int sem_close(sem_t *sem);
+// 若成功，返回0，若出错，返回-1
+
+如果进程没有调用sem_close而退出，内核将自动关闭任何打开的信号量，但不会影响信号量值的状态
+```
+
+销毁一个命名信号量：
+
+```
+int sem_unlink(const char *name);
+// 若成功，返回0，若出错，返回-1
+
+如果最后一个打开的引用关闭了，则删除信号量的名字
+```
+
+信号量的减一操作：
+
+```
+int sem_timedwait(sem_t *restrict sem, const struct timespec *restrict tsptr); // 信号量计数为0，先等待，过了时间计数没能减一，返回-1
+int sem_trywait(sem_t *sem); // 信号量计数为0，不会阻塞，返回-1
+int sem_wait(sem_t *sem);  // 信号量计数为0，则阻塞直到成功使信号量减一或被信号中断
+// 三个函数返回值：若成功，返回0，若出错，返回-1
+```
+
+信号量的加一操作：
+
+```
+int sem_post(sem_t *sem);
+// 若成功，返回0，若出错，返回-1
+
+// 调用sem_post时，如果调用sem_wait发生阻塞，进程会被唤醒且被sem_post加一的信号量计数会再次被sem_wait减一
+```
+
+未命名信号量的创建：
+
+```
+int sem_init(sem_t *sem, int pshared, unsigned int value);
+// 若成功，返回0，若出错，返回-1
+
+pshared：表示是否在多个进程使用信号量，如果是，将其设置为非0值
+value：指定了信号量的初始值
+```
+
+未命名信号量的销毁：
+
+```
+int sem_destroy(sem_t *sem);
+// 若成功，返回0，若出错，返回-1
+
+调用之后，不能再使用任何带有sem的信号量函数，除非通过调用sem_init重新初始化
+```
+
+检索信号量的值：
+
+```
+int sem_getvalue(sem_t *restrict sem, int *restrict valp);
+// 若成功，返回0，若出错，返回-1
+
+如果成功，valp返回信号量的值，在读出来的时候可能已经变了，仅用于调试
+```
+
+使用管道和FIFO，尽可能避免使用消息队列以及信号量，应该考虑全双工管道和记录锁，它们使用起来简单的多，共享存储仍然有其用途，虽然通过mmap函数也能提供同样的功能
