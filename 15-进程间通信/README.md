@@ -310,3 +310,75 @@ sem_op为0：表示调用进程希望等待到该信号量值变成0
 
 无论何时只要为信号量操作指定SEM_UNDO标志，再分配资源（sem_op小于0），内核就会记住对于该特定信号量分配给了进程多少资源，进程终止时，内核会检测该进程是否还有尚未处理的信号量调整值，如果有按照调整值进行处理，如果用带SETVAL或SETALL命令的semctl设置一个信号量的值，则在所有进程中，该信号量的调整值被设置为0
 
+##### 共享存储
+
+允许两个或多个进程共享一个给定的存储区，因为数据不需要在客户进程和服务器进程之间复制，这是最快的一种IPC
+
+```
+struct shmid_ds 
+{
+    struct ipc_perm        shm_perm;    /* 操作许可 */
+    int            shm_segsz;    /* 共享内存大小，字节为单位 */
+    __kernel_time_t        shm_atime;    /* 最后一个进程访问共享内存的时间 */
+    __kernel_time_t        shm_dtime;    /* 最后一个进程离开共享内存的时间 */
+    __kernel_time_t        shm_ctime;    /* 最后一次修改共享内存的时间 */
+    __kernel_ipc_pid_t    shm_cpid;    /* 创建共享内存的进程ID */
+    __kernel_ipc_pid_t    shm_lpid;    /* 最后操作共享内存的进程ID */
+    unsigned short        shm_nattch;    /* 当前使用该贡献内存的进程数量 */
+    unsigned short         shm_unused;    /* compatibility */
+    void             *shm_unused2;    /* ditto - used by DIPC */
+    void            *shm_unused3;    /* unused */
+};
+```
+
+获取一个共享存储标识符：
+
+```
+#include <sys/shm.h>
+
+int shmget(key_t key, size_t size, int flag);
+// 若成功，返回共享存储ID，若出错，返回-1
+
+size是共享存储段的长度，如果创建，必须指定size，且其内容初始化为0，如果引用，则将size指定为0
+```
+
+可对共享存储执行多种操作：
+
+```
+int shmctl(int shmid, int cmd, struct shmid_ds *buf);
+// 若成功，返回0，若出错，返回-1
+
+cmd的含义如下：
+IPC_STAT：读取共享内存区的shmid_ds机构，并将其存储到buf指向的地址
+IPC_RMID：从系统中删除由shmid指向的共享内存区
+IPC_SET：设置共享内存的shmid_ds结构
+
+Linux和Solaris还提供了另外两个命令
+SHM_LOCK：对共享存储加锁
+SHM_UNLOCK：对共享存储解锁
+```
+
+创建之后，需要将其连接到地址空间：
+
+```
+void *shmat(int shmid, const void *addr, int flag);
+// 若成功，返回指向共享存储段的指针，若出错，返回-1
+
+addr==0：内核选择的第一个可用地址上，推荐的方式
+addr非0且没有指定SHM_RND：连接到addr指定的地址(SHM_RND的意思是取整)
+addr非0且指定了SHM_RND：连接到addr mod SHMLBA所表示的地址
+
+flag指定为SHM_RDONLY表示只读，否则以读写方式连接
+```
+
+操作完成后，需要与其分离：
+
+```
+int shmdt(const void *addr);
+// 若成功，返回0，若出错，返回-1
+
+addr是shmat的返回值
+```
+
+但是标识符依然存在，直到带IPC_RMID命令的shmctl删除它
+
