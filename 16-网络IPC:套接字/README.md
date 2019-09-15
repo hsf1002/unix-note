@@ -81,5 +81,83 @@ int shutdown(int sockfd, int how);
 close可以关闭一个套接字，但是只有最后一个活动引用关闭时，close才会释放网络端点，而shutdown允许一个套接字处于不活动状态，和引用它的文件描述符数目无关，还可以方便的关闭双向传输中的一个方向，如读或写
 ```
 
+##### 寻址
+
+进程标识由两部分组成：计算机的网络地址可以标识计算机、端口号表示的服务可以标识特定的进程
+
+处理器支持大端字节序：最大字节地址出现在最低有效字节，小端相反，有些处理器可以配置为大端或小端
+
+同一台计算机上的进程通信不需要考虑字节序，网络协议指定了字节序，异构计算机通信时不被字节序所混淆，TCP/IP应用程序，有4个处理器字节序和网络字节序之间转换的函数：
+
+```
+#include <arpa/inet.h>
+
+uint32_t htonl(uint32_t hostint32); // 返回网络字节序表示的32位整数
+uint16_t htons(uint16_t hostint16); // 返回网络字节序表示的16位整数
+uint32_t ntohl(uint32_t netint32;   // 返回主机字节序表示的32位整数
+uint16_t ntohs(uint16_t netint16);  // 返回主机字节序表示的16位整数
+
+h: 主机host
+n: 网络network
+l: 长整型，4字节
+s: 短整型，2字节
+```
+
+通用的地址结构：
+
+```
+struct sockaddr
+{
+    sa_family_t  sa_family: /* 地址协议族 */
+    char  sa_data[]; /* 可变长度的地址 */
+    ...
+}
+```
+
+linux中定义：
+
+```
+struct sockaddr
+{
+    sa_family_t  sa_family: /* 地址协议族 */
+    char  sa_data[14]; /* 可变长度的地址 */
+    ...
+}
+```
+
+linux中因特网地址结构定义：
+
+```
+struct socketaddr_in
+{
+    sa_family_t  sin_family: /* 地址协议族 */
+    in_port_t  sin_port;  /* 端口号 */
+    struct in6_addr  sin6_addr; /* IPv4地址 */
+    unsigned char sin_zero[8];  /* 填充字段，应该全部置为0 */
+}
+```
+
+将网络字节序的二进制地址转为文本字符串格式：
+
+```
+#include <arpa/inet.h>
+
+const char * inet_ntop(int domain, const void *addrptr, char *strptr, size_t len); 
+// 返回值：若成功，返回地址字符串指针，若出错，返回NULL
+
+domain只支持AF_INET和AF_INET6
+```
+
+将文本字符串格式转换为网络字节序的二进制地址：
+
+```
+#include <arpa/inet.h>
+
+int inet_pton(int domain, const char *strptr, void *addrptr);
+// 返回值：若成功，返回1，若格式无效，返回0，若出错，返回-1
+```
+
+
+
 
 
