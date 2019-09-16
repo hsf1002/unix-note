@@ -157,6 +157,178 @@ int inet_pton(int domain, const char *strptr, void *addrptr);
 // 返回值：若成功，返回1，若格式无效，返回0，若出错，返回-1
 ```
 
+找给定计算机的主机信息（一般存放在/etc/hosts和/etc/services）：
+
+```
+#include <netdb.h>
+
+struct hostent *gethostent(void);
+// 返回值：若成功，返回hostent结构的指针，若出错，返回NULL
+// 如果主机数据库没有打开，gethostent会打开，返回文件中的下一个条目
+
+void sethostent(int stayopen);
+// 打开文件，如果文件已经打开，那么将其回绕
+void endhostent(void);
+// 关闭文件
+
+struct hostent 
+{
+    const  char *h_name;    // 主机名
+    char    **h_aliases;    // 替代的主机名数组
+    short    h_addrtype;    // 主机地址类型
+    short    h_length;      // 地址长度
+    char    **h_addr_list;  // 网络地址数组
+    ... 
+};
+
+另外两个函数gethostbyname和gethostbyaddr已经过时
+```
+
+获取网络名称和网络编号：
+
+```
+#include <netdb.h>
+
+struct netent *getnetent(void);
+struct netent *getnetbyname(const char *name);
+struct netent *getnetbyaddr(uint32_t net, int type);
+// 三个函数返回值：若成功，返回netent结构的指针，若出错，返回NULL
+
+void setnetent(int stayopen);
+void endnetent(void);
+
+struct netent
+{
+  char *n_name;			// 网络名
+  char **n_aliases;	// 替代的网络名数组
+  int n_addrtype;		// 网络地址类型
+  uint32_t n_net;		// 网络编号
+  ...
+}
+```
+
+用以下函数在协议名称和协议编号之间进行映射：
+
+```
+#include <netdb.h>
+
+struct protoent *getprotoent(void);
+struct protoent *getprotobyname(const char *name);
+struct protoent *getprotobynumber(int proto);
+// 三个函数返回值：若成功，返回protoent结构的指针，若出错，返回NULL
+
+void setprotoent(int stayopen);
+void endprotoent(void);
+
+struct protoent {
+    char  *p_name;     // 协议名
+    char **p_aliases;  // 替代的协议名数组  
+    int    p_proto;    // 协议编号
+};
+```
+
+每个服务由一个唯一的众所周知的端口号支持，服务名和端口号之间的映射：
+
+```
+#include <netdb.h>
+
+struct servent *getservent(void); // 顺序扫描服务数据库
+struct servent *getservbyname(const char *name, const char *proto); // 将服务名映射到端口号
+struct servent *getservbyport(int port, const char *proto); // 将端口号映射到服务名
+// 三个函数返回值：若成功，返回servent结构的指针，若出错，返回NULL
+
+void setservent(int stayopen);
+void endservent(void);
+       
+struct servent  
+{
+   char *s_name;         // 服务名
+   char **s_aliases;     // 替代的服务名数组 
+   int s_port;           // 端口号
+   char *s_proto;        // 协议名称
+};
+```
+
+POSIX定义了若干函数，允许一个应用程序将一个主机名和一个服务名映射到一个地址，它们可以替换已经过时的gethostbyname和gethostbyaddr；如getaddrinfo将一个主机名和服务名映射到一个地址：
+
+```
+#include <netdb.h>
+
+int getaddrinfo(const char *node, const char *service,
+                       const struct addrinfo *hints,
+                       struct addrinfo **res);
+// 若成功，返回0，若出错，返回非0错误码           
+// 需要提供主机名和服务名，如果提供一个，另一个必须是空指针
+
+void freeaddrinfo(struct addrinfo *res);
+       
+ struct addrinfo 
+ {
+       int              ai_flags;
+       int              ai_family;
+       int              ai_socktype;
+       int              ai_protocol;
+       socklen_t        ai_addrlen;
+       struct sockaddr *ai_addr;
+       char            *ai_canonname;
+       struct addrinfo *ai_next;
+};
+```
+
+如果getaddrinfo调用失败，不能使用perror或stderror生成错误信息，而要调用：
+
+```
+#include <netdb.h>
+
+const char *gai_strerror(int error);
+// 返回值：指向描述错误的字符串的指针
+```
+
+将一个地址转换为一个主机名和一个服务名：
+
+```
+#include <netdb.h>
+
+int getnameinfo(const struct sockaddr *addr, socklen_t addrlen, char *host, size_t 	  hostlen, char *serv, size_t servlen, int flags);
+// 返回值：若成功返回0，若出错返回-1
+// 套接字地址addr被翻译为一个主机名和一个服务名
+```
+
+关联地址和套接字：
+
+```
+#include <sys/socket.h>
+
+int bind(int sockfd, const struct sockaddr *addr, socklen_t addrlen);
+// 返回值：若成功，返回0，若出错，返回-1
+
+对使用的地址的限制：
+1. 在进程正在运行的计算机上，指定的地址必须有效
+2. 地址必须和创建套接字时的地址族所支持的格式匹配
+3. 地址中的端口号必须不小于1024
+4. 一般只能将一个套接字端点绑定到一个给定地址上
+
+如果IP地址为INADDR_ANY，套接字端点可以被绑定到所有的系统网络接口上，意味着可以接收这个系统所安装的任何一个网卡的数据包
+```
+
+发现绑定到套接字上的地址：
+
+```
+#include <sys/socket.h>
+
+int getsockname(int sockfd, struct sockaddr *localaddr, socklen_t *addrlen);  
+// 返回值：若成功，返回0，若出错，返回-1
+```
+
+如果套接字已经和对等方连接，可以找到对方的地址：
+
+```
+#include <sys/socket.h>
+
+int getpeername(int sockfd, struct sockaddr *peeraddr, socklen_t *addrlen); 
+// 返回值：若成功，返回0，若出错，返回-1
+```
+
 
 
 
