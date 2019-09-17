@@ -329,6 +329,42 @@ int getpeername(int sockfd, struct sockaddr *peeraddr, socklen_t *addrlen
 // 返回值：若成功，返回0，若出错，返回-1
 ```
 
+##### 建立连接
+
+如果要处理面向连接的网络服务，SOCK_STREAM或SOCK_SEQPACKET，在交换数据之前，需要建立连接：
+
+```
+#include <sys/socket.h>
+
+int connect(int sockfd, const struct sockaddr* addr, socklen_t len);
+// 返回值：若成功，返回0，若出错，返回-1
+// 如果套接字描述符处于非阻塞模式，连接不能马上建立，就会返回-1，且将errno设置为EINPROGRESS，可以使用poll或select判断文件描述符何时可写，如果可写，连接完成
+// 如果sockfd没有绑定到一个地址，connect会给调用者绑定一个默认地址
+// 基于BSD的套接字实现中，如果第一次连接失败，那么在TCP中继续使用同一个套接字描述符，仍然会失败，程序应该处理关闭套接字，如果需要重试，必须打开一个新的套接字
+// connect可以用于无连接的网络服务，SOCK_DGRAM，这样传输的报文的目标地址会设置成connect调用中指定的地址，每次传输时不需要再提供地址
+```
+
+服务器可以调用listen宣告它愿意接受连接请求：
+
+```
+#include <sys/socket.h>
+
+int listen(int sockfd, int backlog)
+// 返回值：若成功，返回0，若出错，返回-1
+// backlog提示系统该进程所要入队的未完成连接的请求数量，TCP最大值的默认值是128，一旦队列满，系统就会拒绝多余的连接请求，backlog的值应该基于服务器期望负载和处理量（接受连接请求与气动服务的数量）来选择
+```
+
+一旦服务器调用了listen，套接字就能接收到连接请求，accept可以获得连接请求并建立连接：
+
+```
+#include <sys/socket.h>
+
+int accept(int sockfd,struct sockaddr *addr,socklen_t *addrlen);
+// 返回值：若成功，返回0，若出错，返回-1
+// 如果套接字描述符处于非阻塞模式，就会返回-1，且将errno设置为EAGAIN或EWOULDBLOCK
+// 如果服务器调用accept，且当前没有连接请求，会阻塞直到一个请求到来，服务器可以使用poll或select等待一个请求的到来
+```
+
 
 
 
