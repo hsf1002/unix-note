@@ -365,6 +365,51 @@ int accept(int sockfd,struct sockaddr *addr,socklen_t *addrlen);
 // 如果服务器调用accept，且当前没有连接请求，会阻塞直到一个请求到来，服务器可以使用poll或select等待一个请求的到来
 ```
 
+##### 数据传输
+
+可以将套接字描述符传递给子进程，而该子进程其实并不了解套接字。read和write可以交互数据，如果需要指定选项从多个客户端接收数据包，或者发送带外数据，就需要其他接口
+
+可以指定标志来改变处理传输数据的方式：
+
+```
+#include <sys/socket.h>
+ 
+ssize_t recv(int sockfd, void *buf, size_t nbytes, int flags);
+
+ssize_t send(int sockfd, const void *buf, size_t nbytes, int flags);
+// 若成功，返回发送的字节数，若出错，返回-1
+// 类似于write，使用send时套接字必须已经连接，buf和nbytes与write含义相同
+// flags的标志由系统实现
+// send发送成功，只能说明数据已经被无错误的发送到网络驱动程序了，对端不一定接收到了
+// 对于字节流协议，send会阻塞直到整个数据传输完毕
+```
+
+sendto可以在无连接的套接字上指定一个目标地址：
+
+```
+ssize_t sendto(int sock, const void *buf, size_t len, int flags, const struct sockaddr *to, socklen_t tolen);
+// 若成功，返回发送的字节数，若出错，返回-1
+// 对于面向连接的套接字，目标地址被忽略，因为连接中隐含了地址，对于无连接的套接字，除非先通过connect设置了目标地址，否则不能使用send。sendto提供了发送报文的另一种方案
+```
+
+发送数据时，还可以调用带有msghdr结构的sendmsg来指定多重缓冲区传输数据，类似writev：
+
+```
+ssize_t sendmsg(int sockfd, const struct msghdr *msg, int flags);
+// 若成功，返回发送的字节数，若出错，返回-1
+
+struct msghdr 
+{
+    void          *msg_name;        // protocol address
+    socklen_t      msg_namelen;     // size of protocol address
+    struct iovec  *msg_iov;         // scatter/gather array
+    int            msg_iovlen;      // elements in msg_iov
+    void          *msg_control;     // ancillary data (cmsghdr struct)
+    socklen_t      msg_controllen;  // length of ancillary data
+    int            msg_flags;       // flags returned by recvmsg()
+};
+```
+
 
 
 
