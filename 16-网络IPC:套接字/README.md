@@ -374,14 +374,17 @@ int accept(int sockfd,struct sockaddr *addr,socklen_t *addrlen);
 ```
 #include <sys/socket.h>
  
-ssize_t recv(int sockfd, void *buf, size_t nbytes, int flags);
-
 ssize_t send(int sockfd, const void *buf, size_t nbytes, int flags);
 // 若成功，返回发送的字节数，若出错，返回-1
 // 类似于write，使用send时套接字必须已经连接，buf和nbytes与write含义相同
-// flags的标志由系统实现
 // send发送成功，只能说明数据已经被无错误的发送到网络驱动程序了，对端不一定接收到了
 // 对于字节流协议，send会阻塞直到整个数据传输完毕
+
+// flags的标志由系统实现
+MSG_DONTROUTE: 告诉内核，目标主机在本地网络，不用查路由表
+MSG_DONTWAIT: 将单个I／O操作设置为非阻塞模式
+MSG_OOB:      指明发送的是带外信息
+MSG_EOF:      发送数据后关闭套接字的发送端
 ```
 
 sendto可以在无连接的套接字上指定一个目标地址：
@@ -410,7 +413,42 @@ struct msghdr
 };
 ```
 
+recv和read类似，但是可以指定标志来控制如何接收数据：
 
+```
+ssize_t recv(int sockfd, void *buf, size_t nbytes, int flags);
+// 若成功，返回数据的字节数，若无可用数据或对方已经结束，返回0，若出错，返回-1
 
+// flags的含义：       
+MSG_DONTWAIT：	仅本操作非阻塞 	         	  
+MSG_OOB：　　　发送或接收带外数据	        
+MSG_PEEK：    窥看下一条消息而不读取  	 
+MSG_WAITALL： 等待所有数据 	      	 
+MSG_TRUNC：   数据被截断，也返回实际长度  
+```
 
+可以得定位数据发送者的地址：
+
+```
+int recvfrom(int sockfd, void *buf, size_t len，int flags, struct sockaddr *addr, socklen_t *addrlen); 
+// 若成功，返回数据的字节数，若无可用数据或对方已经结束，返回0，若出错，返回-1
+// 如果addr非空，将包含数据发送者的套接字端点地址
+// 通常用于无连接的套接字，否则，等同于recv
+```
+
+为了将接收到的数据放入多个缓冲区，类似于readv，或者想接收辅助数据：
+
+```
+ssize_t recvmsg(int sockfd, struct msghdr *msg, int flags);
+// 若成功，返回数据的字节数，若无可用数据或对方已经结束，返回0，若出错，返回-1
+
+// flags的含义：       
+MSG_CTRUNC:   控制数据被截断
+MSG_ERRQUEUE: 接收错误信息作为辅助数据
+MSG_EOR:      接收记录结束符
+MSG_OOB:      接收带外信息
+MSG_TRUNC:    一般数据被截断
+```
+
+对于无连接的套接字，数据达到时已经无序，而且可能丢失，如果不能容忍这种缺陷，必须使用面向连接的套接字，需要更多的时间建立连接，每个连接都需要消耗比较多的系统资源
 
