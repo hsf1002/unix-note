@@ -452,3 +452,25 @@ MSG_TRUNC:    一般数据被截断
 
 对于无连接的套接字，数据达到时已经无序，而且可能丢失，如果不能容忍这种缺陷，必须使用面向连接的套接字，需要更多的时间建立连接，每个连接都需要消耗比较多的系统资源
 
+##### 套接字选项
+
+设置选项的值：
+
+```
+#include <sys/socket.h>
+
+int setsockopt(int sock, int level, int option, const void *val, socklen_t len);
+// 返回值：若成功，返回0，若出错，返回-1
+// level是选项应用的协议，如果选项是通用的套接字层次选项，level是SOL_SOCKET，否则level设置为协议编号，对于TCP，level是IPPROTO_TCP，对于IP，level是IPPROTO_IP
+// val根据选项的不同指向一个数据结构或一个整数
+// len指定了val指向对象的大小
+// option是选项名，通用选项、层次选项或某种协议特定选项的名字
+```
+
+查看选项的值：
+
+```
+int getsockopt(int sock, int level, int option, void *val, socklen_t *len);
+// 返回值：若成功，返回0，若出错，返回-1
+```
+
