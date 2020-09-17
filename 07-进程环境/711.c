@@ -12,15 +12,31 @@ int fun4();
 
 /*
      setjmp和longjmp：跳过栈帧
+
+first setjmp success 
+fun4 called start 
+second setjmp success
+
 */
 int main(int argc, char *argv[])
 {
     // 第一次总是返回0，以后的返回值则是longjmp的第二个参数
-    if (setjmp(jmpbuffer) != 0)
+	int result = setjmp(jmpbuffer);
+
+    if (result == 1)
     {
-        ferror("setjmp error");
+        printf("second setjmp success \n");
         exit(0);
     }
+	else if (result == 0)
+	{
+		printf("first setjmp success \n");
+	}
+	else
+	{
+		perror("setjmp error \n");
+		exit(0);
+	}
     fun1();
     printf("main done \n");
 

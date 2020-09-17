@@ -7,6 +7,12 @@ static void my_exit2(void);
 
 /*
     atexit: 退出注册函数 
+
+main is done 
+first exit handler 
+first exit handler 
+second exit handler
+
 */
 int main(int argc, char *argv[])
 {
