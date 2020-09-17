@@ -4,6 +4,11 @@
 
 /*
     access和open的差别
+
+./a.out 403.c 
+read access OK 
+open for reading OK 
+
 */
 int main(int argc, char *argv[])
 {

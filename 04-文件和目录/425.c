@@ -4,6 +4,18 @@
 #include <sys/stat.h>
 #include <time.h>
 
+
+
+int major(dev_t dev)
+{
+	return (int)(dev);
+}
+
+int minor(dev_t dev)
+{
+	return (int)(dev);
+}
+
 /*
     st_dev&st_rdev
 
