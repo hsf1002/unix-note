@@ -9,10 +9,58 @@ struct passwd * getpwnam(const char *name);
 /*
     获取口令文件信息     
     cannot work in macOS
+
+
+hefeng@sw-hefeng:/home/work1/workplace/github/unix-note/06-系统数据文件和信息$ ./a.out root
+get the info 
+name = root, pw = x, uid = 0, gid = 0, shell = /bin/bash, home = /root 
+hefeng@sw-hefeng:/home/work1/workplace/github/unix-note/06-系统数据文件和信息$ ./a.out hefeng
+continue. ptr->pw_name = root 
+continue. ptr->pw_name = daemon 
+continue. ptr->pw_name = bin 
+continue. ptr->pw_name = sys 
+continue. ptr->pw_name = sync 
+continue. ptr->pw_name = games 
+continue. ptr->pw_name = man 
+continue. ptr->pw_name = lp 
+continue. ptr->pw_name = mail 
+continue. ptr->pw_name = news 
+continue. ptr->pw_name = uucp 
+continue. ptr->pw_name = proxy 
+continue. ptr->pw_name = www-data 
+continue. ptr->pw_name = backup 
+continue. ptr->pw_name = list 
+continue. ptr->pw_name = irc 
+continue. ptr->pw_name = gnats 
+continue. ptr->pw_name = nobody 
+continue. ptr->pw_name = systemd-timesync 
+continue. ptr->pw_name = systemd-network 
+continue. ptr->pw_name = systemd-resolve 
+continue. ptr->pw_name = systemd-bus-proxy 
+continue. ptr->pw_name = syslog 
+continue. ptr->pw_name = _apt 
+continue. ptr->pw_name = messagebus 
+continue. ptr->pw_name = uuidd 
+continue. ptr->pw_name = lightdm 
+continue. ptr->pw_name = whoopsie 
+continue. ptr->pw_name = avahi-autoipd 
+continue. ptr->pw_name = avahi 
+continue. ptr->pw_name = dnsmasq 
+continue. ptr->pw_name = colord 
+continue. ptr->pw_name = speech-dispatcher 
+continue. ptr->pw_name = hplip 
+continue. ptr->pw_name = kernoops 
+continue. ptr->pw_name = pulse 
+continue. ptr->pw_name = rtkit 
+continue. ptr->pw_name = saned 
+continue. ptr->pw_name = usbmux 
+get the info 
+name = hefeng, pw = x, uid = 1000, gid = 1000, shell = /bin/bash, home = /home/hefeng 
+
 */
 int main(int argc, char *argv[])
 {
-    struct passwd *ptr = getpwnam("root");
+    struct passwd *ptr = getpwnam(argv[1]);
     if (NULL == ptr)
     {
         printf("passwd is null \n");
@@ -43,9 +91,10 @@ struct passwd * getpwnam(const char *name)
 
         printf("continue. ptr->pw_name = %s \n", ptr->pw_name);
         ptr++;
-        // 关闭打开的文件
-        endpwent();
     }
 
-    return ptr;
+    // 关闭打开的文件
+    endpwent();
+    
+	return ptr;
 }

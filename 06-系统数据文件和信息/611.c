@@ -5,6 +5,10 @@
 
 /*
     time、localtime、strftime    
+
+buffer len 16 is too small 
+time and date: 11:34:11 AM, Thu Sep 17, 2020
+
 */
 int main(int argc, char *argv[])
 {
