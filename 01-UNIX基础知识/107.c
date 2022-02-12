@@ -18,6 +18,7 @@ ls
 13.c	14.c	15.c	17.c	a.out
 ^C
     
+    在终端循环执行某个程序
 */
 int main(int argc, char *argv[])
 {

@@ -3,8 +3,9 @@
 
 
 /*
-    	1. ./.out: 出将标准输入的内容一个字符一个字符打印到标准输出
-	2. ./.out < input > output: 将文件的内容复制到另一个文件
+    1. ./a.out > data : 将标准输入从标准输出打印并写到文件
+    2. ./a.out < data : 将data中内容读取并显示到终端
+    3. ./a.out < data > output: 将文件的内容复制到另一个文件
 */
 int main(int argc, char *argv[])
 {

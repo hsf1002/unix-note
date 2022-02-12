@@ -37,7 +37,7 @@ cat /etc/shells
 查看当前shell：
 
 ```
-echo $SHEL
+echo $SHELL
 ```
 
 ##### 文件和目录

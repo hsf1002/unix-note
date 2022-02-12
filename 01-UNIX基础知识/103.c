@@ -1,6 +1,23 @@
 #include <stdio.h>
 #include <dirent.h>
 
+/*
+
+./a.out .
+.
+..
+.DS_Store
+103.c
+104.c
+105.c
+107.c
+108.c
+110.c
+a.out
+README.md
+
+    打印指定目录下所有文件和目录
+*/
 int main(int argc, char **argv)
 {
     DIR *dp;
